@@ -1,0 +1,30 @@
+# Dienstausweis hinter dem nginx eines Plesk-Servers, wie S1-Control: Das
+# Zertifikat holt Plesk, die Domain leitet an den Dienst weiter, der nur auf
+# 127.0.0.1 lauscht.
+#
+#   cp .env.beispiel .env      # ausfüllen
+#   docker compose -f docker-compose.plesk.yml up -d --build
+#   nginx-Direktiven der Domain: deploy/plesk/nginx-direktiven.conf
+#
+# Der Container hat kein Volume zum Schreiben und ein schreibgeschütztes
+# Dateisystem: Er kann nichts aufbewahren.
+
+services:
+  dienstausweis:
+    build: .
+    image: dienstausweis
+    container_name: dienstausweis-plesk
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    ports:
+      - "127.0.0.1:${DA_PLESK_PORT:-8086}:8080"
+    env_file: .env
+    environment:
+      DA_HOST: 0.0.0.0
+      DA_PORT: "8080"
+      DA_HINTER_PROXY: "1"
+    volumes:
+      # Zertifikate und Schlüssel, nur lesbar. Die Pfade in .env beginnen mit /geheim/.
+      - ./geheim:/geheim:ro

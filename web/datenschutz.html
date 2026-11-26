@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Datenschutz – Dienstausweis</title>
+  <meta name="description" content="Datenschutzhinweise der Dienstausweis-App: was auf dem Gerät bleibt und was beim Ausstellen eines Wallet-Passes geschieht." />
+  <meta name="theme-color" content="#12275e" />
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    /* Grundfarbe, bevor das Stylesheet geladen ist: nachts kein heller Blitz. */
+    html { background: #f3f5f9; }
+    html.dunkel-modus { background: #0f1116; color: #e7eaf1; }
+    html.nacht-modus { background: #0d0c08; color: #d9cdb6; }
+  </style>
+  <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+  <script>
+    // Anzeigemodus vor dem ersten Malen anwenden, sonst blitzt die Seite
+    // nachts erst hell auf. Gleiche Regel wie anzeige.ts: gespeicherte Wahl
+    // geht vor, ohne Wahl entscheidet die Systemeinstellung (dunkel → Dunkel).
+    try {
+      var daModus = localStorage.getItem("da.anzeigemodus.v1");
+      if (!daModus && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
+        daModus = "dunkel";
+      if (daModus === "feld" || daModus === "nacht" || daModus === "dunkel")
+        document.documentElement.classList.add(daModus + "-modus");
+      if (daModus === "nacht")
+        document.querySelector('meta[name="theme-color"]').setAttribute("content", "#221f16");
+    } catch (e) { /* Privatmodus: Standard-Darstellung */ }
+  </script>
+</head>
+<body>
+  <div id="app" class="textseite">
+    <button type="button" class="sprungmarke" id="sprungmarke">Zum Inhalt springen</button>
+
+    <header class="seiten-kopf">
+      <div class="kopf-inhalt">
+        <div class="titelzeile">
+          <a class="zur-app" href="./">‹ Zur App</a>
+          <div class="anzeige-schalter" role="group" aria-label="Anzeige">
+            <button type="button" data-modus="standard" title="Normale, helle Darstellung">Standard</button>
+            <button type="button" data-modus="dunkel" title="Heller Text auf dunklem Grund">Dunkel</button>
+            <button type="button" data-modus="feld" title="Große Tippziele und hoher Kontrast für draußen">Feld</button>
+            <button type="button" data-modus="nacht" title="Gedimmte, warme Darstellung für Nachteinsätze">Nacht</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="inhalt" tabindex="-1" class="rechtstext">
+      <h1>Datenschutz</h1>
+
+      <h2>1. Verantwortlicher</h2>
+      <p>Johannes Rudolph, Anschrift und Kontakt siehe <a href="./impressum.html">Impressum</a>.</p>
+
+      <h2>2. Was auf deinem Gerät bleibt</h2>
+      <p>Alles, was du in die Maske schreibst, verarbeitet die Seite in deinem Browser: Dienstausweisnummer, Name,
+        Dienststelle, Geburtsdatum, Gültigkeit, Berechtigungen und das Passfoto. Gespeichert wird im
+        <code>localStorage</code> dieses Browsers unter den Schlüsseln <code>da.ausweis.v1</code>,
+        <code>da.foto.v1</code> und <code>da.anzeigemodus.v1</code>. Das Foto wird im Browser zugeschnitten und
+        verkleinert, das Original verlässt das Gerät nicht. Es gibt kein Konto, keine Cookies und keine
+        Reichweitenmessung.</p>
+      <p>Löschen kannst du die Daten unter „Daten eintragen“ → „Datensicherung“ → „Ausweis von diesem Gerät löschen“
+        oder über die Website-Daten deines Browsers. Eine Sicherungsdatei, die du selbst speicherst, enthält die Angaben
+        im Klartext und liegt dort, wo du sie ablegst.</p>
+
+      <h2>3. Aufruf der Seite</h2>
+      <p>Beim Abruf der Seite verarbeitet der Webserver technisch notwendige Verbindungsdaten wie die IP-Adresse, den
+        Zeitpunkt und die abgerufene Datei (Art. 6 Abs. 1 lit. f DSGVO, sicherer und stabiler Betrieb). Die App lädt keine
+        Schriften, Skripte oder Bilder von fremden Servern. Nach dem ersten Aufruf startet sie aus dem Speicher des
+        Browsers, auch ohne Netz.</p>
+
+      <h2>4. Wallet-Pass ausstellen</h2>
+      <p>Nur wenn du auf „Zu Apple Wallet hinzufügen“ oder „In Google Wallet speichern“ tippst, sendet der Browser die
+        Ausweisdaten an den Server dieser Seite, für Apple Wallet zusätzlich das verkleinerte Foto. Ein Pass muss mit
+        einem geheimen Schlüssel signiert werden, und der kann nicht im Browser liegen. Der Server baut den Pass im
+        Arbeitsspeicher, signiert ihn, schickt ihn zurück und verwirft die Daten. Er schreibt sie in keine Datenbank,
+        keine Datei und kein Protokoll (Art. 6 Abs. 1 lit. b DSGVO, Erfüllung deiner Anfrage). Um Missbrauch zu bremsen,
+        zählt er für höchstens zehn Minuten im Arbeitsspeicher, wie viele Pässe eine IP-Adresse angefordert hat.</p>
+      <p>Apple Wallet: Der Pass ist eine Datei, die dein Gerät in die Wallet übernimmt. Je nach deinen
+        iCloud-Einstellungen gleicht Apple ihn mit deinen anderen Geräten ab.</p>
+      <p>Google Wallet: Der Server liefert einen signierten Link zurück, der die Ausweisdaten ohne Foto enthält. Öffnet
+        dein Gerät diesen Link, erhält Google die Daten und speichert den Pass in deinem Google-Konto. Dafür gelten die
+        Datenschutzbestimmungen von Google. Entfernst du den Pass in Google Wallet, verschwindet er von deinen Geräten.</p>
+
+      <h2>5. Deine Rechte</h2>
+      <p>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und
+        Widerspruch sowie das Recht, dich bei einer Datenschutzaufsichtsbehörde zu beschweren. Da der Server keine
+        Ausweisdaten aufbewahrt, liegen die Angaben praktisch nur bei dir.</p>
+    </main>
+
+    <footer class="seite">
+      <div class="fuss-gruppen">
+        <div class="fuss-gruppe">
+          <span class="fuss-titel">Projekt</span>
+          <a href="https://github.com/wattnpapa/dienstausweis">Quellcode</a>
+          <a href="https://github.com/wattnpapa/dienstausweis/issues">Fehler melden</a>
+        </div>
+        <div class="fuss-gruppe">
+          <span class="fuss-titel">Rechtliches</span>
+          <a href="./impressum.html">Impressum</a>
+          <a href="./datenschutz.html">Datenschutz</a>
+        </div>
+      </div>
+      <p class="fuss-marke">Lizenz EUPL-1.2. Ohne Anmeldung, ohne Speicherung auf einem Server.</p>
+    </footer>
+  </div>
+  <script type="module" src="./src/seite.ts"></script>
+</body>
+</html>

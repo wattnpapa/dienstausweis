@@ -1,0 +1,73 @@
+# Dienstausweis auf dem Plesk-Server bei jedem Push auf main
+# aktualisieren.
+#
+# Der Workflow verbindet sich per SSH mit dem Server und startet dort
+# deploy/plesk/deploy.sh. Das Skript holt den Stand, baut das Bild, startet
+# den Dienst und prueft /gesundheit. Schlaegt es fehl, wird der Lauf rot.
+# Empfohlen: den Schluessel in authorized_keys per command= an genau dieses
+# Kommando binden, dann kann er nichts anderes.
+#
+# Repository-Secrets (Settings → Secrets and variables → Actions):
+#   PLESK_HOST         Hostname oder IP des Servers
+#   PLESK_USER         root oder der Deploy-Benutzer
+#   PLESK_SSH_KEY      privater Schluessel (ed25519), nur fuer diesen Zweck
+#   PLESK_KNOWN_HOSTS  Ausgabe von `ssh-keyscan -p <Port> <Host>`
+#   PLESK_SSH_PORT     optional, Vorgabe 22
+#
+# Der Lauf startet erst, wenn die Repository-Variable PLESK_DEPLOY auf „an“
+# steht (Settings → Secrets and variables → Actions → Variables). Vorher gibt
+# es noch keinen Server, und jeder Push wäre rot.
+name: Deploy Plesk
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Nie zwei Deploys gleichzeitig; ein laufender wird nicht abgebrochen,
+# der naechste wartet.
+concurrency:
+  group: deploy-plesk
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: vars.PLESK_DEPLOY == 'an'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: SSH einrichten
+        env:
+          SSH_KEY: ${{ secrets.PLESK_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.PLESK_KNOWN_HOSTS }}
+        run: |
+          [ -n "$SSH_KEY" ] || { echo "Secret PLESK_SSH_KEY fehlt"; exit 1; }
+          [ -n "$KNOWN_HOSTS" ] || { echo "Secret PLESK_KNOWN_HOSTS fehlt"; exit 1; }
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy-Skript auf dem Server starten
+        env:
+          HOST: ${{ secrets.PLESK_HOST }}
+          USER: ${{ secrets.PLESK_USER }}
+          PORT: ${{ secrets.PLESK_SSH_PORT || '22' }}
+        # Ist der Schluessel in authorized_keys an ein erzwungenes Kommando
+        # gebunden, ersetzt der Server diese Zeile durch jenes; sonst laeuft
+        # sie so, wie sie hier steht.
+        run: |
+          [ -n "$HOST" ] || { echo "Secret PLESK_HOST fehlt"; exit 1; }
+          [ -n "$USER" ] || { echo "Secret PLESK_USER fehlt"; exit 1; }
+          ssh -p "$PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=20 \
+            -o ServerAliveInterval=30 \
+            "$USER@$HOST" \
+            'DA_ZWEIG=main bash /opt/dienstausweis/deploy/plesk/deploy.sh'
