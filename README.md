@@ -27,9 +27,9 @@ auf die Platte, der Container läuft mit schreibgeschütztem Dateisystem.
 Der Strichcode trägt die Dienstausweisnummer, als Code 39 (Vorgabe) oder Code 128.
 Unter „Daten eintragen“ → „Strichcode“ lässt sich die Art umstellen und ein
 abweichender Inhalt setzen, falls die Karte etwas anderes kodiert als die
-aufgedruckte Nummer. Welche Art und welchen Inhalt die echten Karten tragen, ist
-noch gegen eine Karte zu prüfen; danach wird die Vorgabe in `src/daten.ts`
-(`LEER.strichcodeArt`) festgelegt.
+aufgedruckte Nummer. Die Karten tragen Code 39 mit der vollen Nummer samt
+Bindestrich und laufender Endnummer (etwa `01234567-01`); das ist die Vorgabe
+(`LEER.strichcodeArt` in `src/daten.ts`).
 
 Apple Wallet zeichnet von den eindimensionalen Codes nur Code 128 selbst. Bei
 Code 39 legt der Dienst den Strichcode als Bild in den Pass (Passart
