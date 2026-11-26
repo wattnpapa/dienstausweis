@@ -39,7 +39,7 @@ export function googleObjekt(ausweis: Ausweis, einstellung: GoogleEinstellung, k
         classId: `${einstellung.aussteller}.${einstellung.klasse}`,
         state: "ACTIVE",
         hexBackgroundColor: "#12275e",
-        cardTitle: sprachtext("Dienstausweis"),
+        cardTitle: sprachtext("THW-Ausweis"),
         header: sprachtext(vollerName(ausweis) || ausweis.nummer),
         ...(ausweis.dienststelle ? { subheader: sprachtext(ausweis.dienststelle) } : {}),
         barcode: {

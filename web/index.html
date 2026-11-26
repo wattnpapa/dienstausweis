@@ -67,18 +67,20 @@
           <div class="ausweis-spalte">
             <p class="alarm-kasten" id="abgelaufen" role="status" hidden></p>
 
-            <article class="ausweis" aria-label="Dienstausweis">
+            <article class="ausweis" aria-label="THW-Ausweis">
               <header class="ausweis-kopf">
-                <span class="ausweis-titel">Dienstausweis</span>
-                <span class="ausweis-stelle" id="a-dienststelle"></span>
+                <span class="ausweis-traeger">Bundesanstalt Technisches Hilfswerk</span>
+                <span class="ausweis-titel">THW-Ausweis</span>
               </header>
               <div class="ausweis-rumpf">
                 <div class="ausweis-foto" id="a-foto"></div>
                 <dl class="ausweis-angaben">
-                  <div class="breit"><dt>Name</dt><dd id="a-name" class="ausweis-name"></dd></div>
-                  <div><dt>Geburtsdatum</dt><dd id="a-geburtsdatum"></dd></div>
-                  <div><dt>Gültig bis</dt><dd id="a-gueltig"></dd></div>
-                  <div class="breit"><dt>Ausweis-Nr.</dt><dd id="a-nummer" class="daten"></dd></div>
+                  <div><dt class="nur-sr">Ausweisnummer</dt><dd id="a-nummer" class="daten"></dd></div>
+                  <div><dd id="a-nachname" class="ausweis-name"></dd><dt>Name</dt></div>
+                  <div><dd id="a-vorname" class="ausweis-name"></dd><dt>Vorname</dt></div>
+                  <div><dd id="a-geburtsdatum"></dd><dt>Geburtstag</dt></div>
+                  <div><dd id="a-gueltig"></dd><dt>Gültig bis</dt></div>
+                  <div id="a-stelle-zeile"><dd id="a-dienststelle"></dd><dt>Dienststelle</dt></div>
                 </dl>
               </div>
               <ul class="marken" id="a-marken" aria-label="Berechtigungen"></ul>
@@ -116,19 +118,19 @@
         <form id="maske" novalidate autocomplete="off">
           <section class="karte">
             <h2>Ausweis</h2>
-            <p class="nebentext">Übernimm die Angaben so, wie sie auf deinem Dienstausweis stehen.</p>
+            <p class="nebentext">Übernimm die Angaben so, wie sie auf deinem THW-Ausweis stehen. Die Dienststelle steht dort nicht, sie ist freiwillig.</p>
             <label class="feld">Dienstausweisnummer
-              <input type="text" name="nummer" maxlength="30" inputmode="text" autocapitalize="characters" spellcheck="false" class="daten" />
+              <input type="text" name="nummer" maxlength="30" inputmode="text" autocapitalize="characters" spellcheck="false" class="daten" placeholder="z. B. 01234567-01" />
             </label>
             <div class="zeile">
+              <label class="feld">Name <input type="text" name="nachname" maxlength="60" /></label>
               <label class="feld">Vorname <input type="text" name="vorname" maxlength="60" /></label>
-              <label class="feld">Nachname <input type="text" name="nachname" maxlength="60" /></label>
             </div>
             <label class="feld">Dienststelle
               <input type="text" name="dienststelle" maxlength="80" placeholder="z. B. Ortsverband Musterstadt" />
             </label>
             <div class="zeile">
-              <label class="feld mittel">Geburtsdatum <input type="date" name="geburtsdatum" /></label>
+              <label class="feld mittel">Geburtstag <input type="date" name="geburtsdatum" /></label>
               <label class="feld mittel">Gültig bis <input type="date" name="gueltigBis" /></label>
             </div>
           </section>

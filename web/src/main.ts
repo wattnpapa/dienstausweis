@@ -215,7 +215,9 @@ function zeichneAusweis(): void {
         return;
     }
     el("a-dienststelle").textContent = ausweis.dienststelle;
-    el("a-name").textContent = vollerName(ausweis);
+    el("a-stelle-zeile").hidden = ausweis.dienststelle === "";
+    el("a-nachname").textContent = ausweis.nachname || "–";
+    el("a-vorname").textContent = ausweis.vorname || "–";
     el("a-geburtsdatum").textContent = datumDeutsch(ausweis.geburtsdatum) || "–";
     el("a-gueltig").textContent = datumDeutsch(ausweis.gueltigBis) || "–";
     el("a-nummer").textContent = ausweis.nummer;
