@@ -4,8 +4,7 @@ import {
     LEER, abgelaufen, bereinige, datumDeutsch, fehlendeAngaben, strichcodeInhalt,
     type Ausweis, type Berechtigung
 } from "../../src/daten.js";
-import { findeDienststelle } from "../../src/dienststelle.js";
-import { DIENSTSTELLEN } from "../../src/dienststellen.js";
+import { findeDienststelle, schlageVor, type Dienststelle } from "../../src/dienststelle.js";
 import { strichcodeFehler, strichcodeModule } from "../../src/strichcode.js";
 import { fotoAusDatei, fotoFuerPass, fotoGueltig } from "./foto.js";
 import { strichcodeSvg } from "./strichcode-svg.js";
@@ -163,15 +162,72 @@ function baueKatalog(): void {
     }));
 }
 
-function baueDienststellen(): void {
-    el("dienststellen").replaceChildren(...DIENSTSTELLEN.map(([kurz, name]) => {
-        const wahl = neu("option");
-        wahl.value = name;
-        if (kurz) {
-            wahl.label = kurz;
+// Eigene Vorschlagsliste statt <datalist>: Safari sucht dort nur im Label,
+// hier sollen Ort, Name und Kürzel gleichermaßen treffen.
+let vorschlaege: Dienststelle[] = [];
+let markiert = -1;
+
+function dienststellenFeld(): HTMLInputElement {
+    return feld("dienststelle") as HTMLInputElement;
+}
+
+function schliesseVorschlaege(): void {
+    vorschlaege = [];
+    markiert = -1;
+    el("dienststelle-liste").hidden = true;
+    el("dienststelle-liste").replaceChildren();
+    dienststellenFeld().setAttribute("aria-expanded", "false");
+    dienststellenFeld().removeAttribute("aria-activedescendant");
+}
+
+function zeigeVorschlaege(): void {
+    const eingabe = dienststellenFeld().value.trim();
+    const liste = schlageVor(eingabe);
+    // Steht genau der eine Vorschlag schon da, braucht es keine Liste.
+    if (liste.length === 0 || (liste.length === 1 && liste[0]?.name === eingabe)) {
+        schliesseVorschlaege();
+        return;
+    }
+    vorschlaege = liste;
+    markiert = -1;
+    el("dienststelle-liste").replaceChildren(...liste.map((stelle, nummer) => {
+        const zeile = neu("li");
+        zeile.id = `dienststelle-${nummer}`;
+        zeile.setAttribute("role", "option");
+        zeile.setAttribute("aria-selected", "false");
+        zeile.append(neu("span", "", stelle.name));
+        if (stelle.kurz) {
+            zeile.append(neu("span", "kurz", stelle.kurz));
         }
-        return wahl;
+        // Fokus im Feld lassen, sonst schließt die Liste vor dem Klick.
+        zeile.addEventListener("mousedown", ereignis => ereignis.preventDefault());
+        zeile.addEventListener("click", () => waehleVorschlag(nummer));
+        return zeile;
     }));
+    el("dienststelle-liste").hidden = false;
+    dienststellenFeld().setAttribute("aria-expanded", "true");
+    dienststellenFeld().removeAttribute("aria-activedescendant");
+}
+
+function markiereVorschlag(nummer: number): void {
+    markiert = (nummer + vorschlaege.length) % vorschlaege.length;
+    el("dienststelle-liste").querySelectorAll("li").forEach((zeile, stelle) => {
+        zeile.setAttribute("aria-selected", String(stelle === markiert));
+        if (stelle === markiert) {
+            zeile.scrollIntoView({ block: "nearest" });
+        }
+    });
+    dienststellenFeld().setAttribute("aria-activedescendant", `dienststelle-${markiert}`);
+}
+
+function waehleVorschlag(nummer: number): void {
+    const stelle = vorschlaege[nummer];
+    if (!stelle) {
+        return;
+    }
+    dienststellenFeld().value = stelle.name;
+    schliesseVorschlaege();
+    uebernimm();
 }
 
 /** Sagt unter dem Feld, was auf der Karte stehen wird. */
@@ -303,6 +359,26 @@ maske.addEventListener("input", uebernimm);
 feld("dienststelle").addEventListener("change", () => {
     feld("dienststelle").value = ausweis.dienststelle;
     zeigeDienststelle();
+});
+dienststellenFeld().addEventListener("input", zeigeVorschlaege);
+dienststellenFeld().addEventListener("focus", zeigeVorschlaege);
+dienststellenFeld().addEventListener("blur", schliesseVorschlaege);
+dienststellenFeld().addEventListener("keydown", ereignis => {
+    if (ereignis.key === "ArrowDown" || ereignis.key === "ArrowUp") {
+        if (vorschlaege.length === 0) {
+            zeigeVorschlaege();
+        }
+        if (vorschlaege.length > 0) {
+            ereignis.preventDefault();
+            markiereVorschlag(ereignis.key === "ArrowDown" ? markiert + 1 : (markiert < 0 ? -1 : markiert - 1));
+        }
+    } else if (ereignis.key === "Enter" && markiert >= 0) {
+        ereignis.preventDefault();
+        waehleVorschlag(markiert);
+    } else if (ereignis.key === "Escape" && vorschlaege.length > 0) {
+        ereignis.preventDefault();
+        schliesseVorschlaege();
+    }
 });
 maske.addEventListener("submit", ereignis => ereignis.preventDefault());
 // Die Nummer steht auf der Karte in Großbuchstaben, und Code 39 kennt keine kleinen.
@@ -470,7 +546,6 @@ el<HTMLButtonElement>("wallet-google").addEventListener("click", ereignis => mit
 // ---- Start -----------------------------------------------------------------
 
 baueKatalog();
-baueDienststellen();
 // Logo und Emblem liegen beim Dienst unter /marke/, neben /wallet/.
 baueWalletVorschau(el("wallet-vorschau"), DIENST.replace(/\/wallet$/, ""));
 fuelleMaske();

@@ -970,3 +970,23 @@ details.unterbereich > summary {
 .g-details { max-width: 21.5rem; margin: var(--r-2) auto 0; font-size: var(--t-s); border-top: var(--strich) solid var(--linie-fein); }
 .g-details dt { font-size: var(--t-xs); color: var(--text-2); margin-top: var(--r-2); }
 .g-details dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Vorschläge zur Dienststelle: Ort, Name oder Kürzel */
+.vorschlag-feld { position: relative; }
+.vorschlaege {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 20;
+  margin: var(--r-1) 0 0; padding: 0; list-style: none;
+  max-height: 20rem; overflow-y: auto;
+  background: var(--flaeche); color: var(--text);
+  border: var(--strich-stark) solid var(--linie-stark); border-radius: var(--radius);
+}
+.vorschlaege[hidden] { display: none; }
+.vorschlaege li {
+  display: flex; justify-content: space-between; align-items: center; gap: var(--r-3);
+  min-height: 48px; padding: var(--r-2) var(--r-3);
+  font-size: var(--t-m); cursor: pointer;
+}
+.vorschlaege li + li { border-top: var(--strich) solid var(--flaeche-2); }
+.vorschlaege li:hover, .vorschlaege li[aria-selected="true"] { background: var(--flaeche-2); }
+.vorschlaege li[aria-selected="true"] { box-shadow: inset 4px 0 0 var(--akzent); }
+.vorschlaege .kurz { font-family: var(--schrift-daten); font-size: var(--t-s); color: var(--text-2); }

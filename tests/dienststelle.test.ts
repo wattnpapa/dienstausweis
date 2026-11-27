@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { bereinige } from "../src/daten.js";
-import { einheitlicheDienststelle, findeDienststelle } from "../src/dienststelle.js";
+import { einheitlicheDienststelle, findeDienststelle, schlageVor } from "../src/dienststelle.js";
 import { DIENSTSTELLEN } from "../src/dienststellen.js";
 
 describe("Dienststellen", () => {
@@ -41,5 +41,36 @@ describe("Dienststellen", () => {
 
     it("gilt auch für gespeicherte Ausweise", () => {
         expect(bereinige({ dienststelle: "Ortsverband Achim" }).dienststelle).toBe("OV Achim");
+    });
+
+    describe("Vorschläge", () => {
+        const namen = (eingabe: string): string[] => schlageVor(eingabe).map(stelle => stelle.name);
+
+        it.each(["Olden", "oldenburg", "OV Olden", "Ortsverband Olden", "THW-OV Oldenb"])("schlägt zu „%s“ die Ortsverbände Oldenburg vor", eingabe => {
+            expect(namen(eingabe)).toEqual(expect.arrayContaining(["OV Oldenburg (NI)", "OV Oldenburg in Holstein"]));
+            expect(namen(eingabe)[0]).toMatch(/^OV Oldenburg/);
+        });
+
+        it("findet über das Kürzel, ganz oder angefangen", () => {
+            expect(namen("OODE")[0]).toBe("OV Oldenburg (NI)");
+            expect(namen("OAA")).toContain("OV Aachen");
+        });
+
+        it("findet ohne Umlaute und mitten im Namen", () => {
+            expect(namen("Altoett")).toContain("OV Altötting");
+            expect(namen("Saale")).toContain("OV Halle (Saale)");
+            expect(namen("Riß")).toContain("OV Biberach/Riß");
+        });
+
+        it("bleibt bei der genannten Art", () => {
+            expect(namen("RSt Olden")).toEqual(["RSt Oldenburg"]);
+            expect(namen("Landesverband Bay")).toEqual(["LV Bayern"]);
+        });
+
+        it("liefert höchstens acht und nichts zu leerer Eingabe", () => {
+            expect(schlageVor("a")).toHaveLength(8);
+            expect(schlageVor("  ")).toEqual([]);
+            expect(schlageVor("OV")).toEqual([]);
+        });
     });
 });

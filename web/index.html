@@ -64,10 +64,12 @@
               <label class="feld">Name <input type="text" name="nachname" maxlength="60" /></label>
               <label class="feld">Vorname <input type="text" name="vorname" maxlength="60" /></label>
             </div>
-            <label class="feld">Dienststelle
-              <input type="text" name="dienststelle" maxlength="80" list="dienststellen" autocapitalize="words" spellcheck="false" placeholder="Ort oder Kürzel, z. B. Aachen oder OAAC" aria-describedby="dienststelle-stand" />
-            </label>
-            <datalist id="dienststellen"></datalist>
+            <div class="vorschlag-feld">
+              <label class="feld">Dienststelle
+                <input type="text" name="dienststelle" maxlength="80" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="dienststelle-liste" autocapitalize="words" spellcheck="false" placeholder="Ort, Name oder Kürzel, z. B. Aachen oder OAAC" aria-describedby="dienststelle-stand" />
+              </label>
+              <ul class="vorschlaege" id="dienststelle-liste" role="listbox" aria-label="Dienststellen" hidden></ul>
+            </div>
             <p class="hinweis" id="dienststelle-stand" aria-live="polite"></p>
             <div class="zeile">
               <label class="feld mittel">Geburtstag <input type="date" name="geburtsdatum" /></label>
