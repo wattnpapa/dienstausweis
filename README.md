@@ -1,60 +1,64 @@
 # Dienstausweis
 
-Web-App für eine digitale Kopie des THW-Dienstausweises. Man trägt
-Dienstausweisnummer, Name, Dienststelle, Geburtsdatum und Gültigkeit ein, wählt
-seine Berechtigungen und bekommt den Ausweis mit Strichcode aufs Telefon, zum
-Vorhalten am Zeiterfassungsterminal. Auf Wunsch wandert er als Pass in Apple
-Wallet oder Google Wallet.
+Eine Seite, die aus den Angaben des THW-Ausweises eine Karte für Apple Wallet
+oder Google Wallet erzeugt. Man trägt Dienstausweisnummer, Name, Vorname,
+Geburtstag und Gültigkeit ein, wählt seine Berechtigungen, auf Wunsch ein
+Passfoto, und legt die Karte in die Wallet. Der Strichcode darauf ist der der
+Karte und dient am Zeiterfassungsterminal.
 
-Kein amtliches Angebot des THW. Was die App zeigt, ist eine vom Inhaber selbst
-erstellte Kopie und ersetzt den Dienstausweis nicht.
+Die Seite ist bewusst keine App: Sie zeigt keinen Ausweis an und läuft nicht ohne
+Netz. Sie ist die Maske, die Wallet ist die Anzeige.
+
+Kein amtliches Angebot des THW. Die Karte ist eine vom Inhaber selbst erstellte
+Kopie und ersetzt den THW-Ausweis nicht.
 
 ## Wo die Daten liegen
 
-Ausweis und Foto liegen im `localStorage` des Browsers, sonst nirgends. Es gibt
-kein Konto und keine Datenbank. Nach dem ersten Aufruf startet die App auch ohne
-Netz (Service Worker), der Strichcode funktioniert also im Keller der Unterkunft.
+Die Eingaben liegen im `localStorage` des Browsers, damit man die Karte später
+mit geänderten Berechtigungen neu erstellen kann. Es gibt kein Konto und keine
+Datenbank.
 
-Ein Wallet-Pass braucht eine Signatur mit einem geheimen Schlüssel, bei Apple das
-Pass-Type-ID-Zertifikat, bei Google den Schlüssel eines Dienstkontos. Der darf
-nicht im Browser liegen. Deshalb gehört zur App ein kleiner Dienst
-(`server/`): Er nimmt die Ausweisdaten entgegen, baut und signiert den Pass im
-Arbeitsspeicher, schickt ihn zurück und verwirft die Daten. Er schreibt nichts
+Eine Wallet-Karte braucht eine Signatur mit einem geheimen Schlüssel, bei Apple
+das Pass-Type-ID-Zertifikat, bei Google den Schlüssel eines Dienstkontos. Der
+darf nicht im Browser liegen. Deshalb gehört zur Seite ein kleiner Dienst
+(`server/`): Er nimmt die Angaben entgegen, baut und signiert die Karte im
+Arbeitsspeicher, schickt sie zurück und verwirft die Daten. Er schreibt nichts
 auf die Platte, der Container läuft mit schreibgeschütztem Dateisystem.
 
 ## Strichcode
 
-Der Strichcode trägt die Dienstausweisnummer, als Code 39 (Vorgabe) oder Code 128.
-Unter „Daten eintragen“ → „Strichcode“ lässt sich die Art umstellen und ein
-abweichender Inhalt setzen, falls die Karte etwas anderes kodiert als die
-aufgedruckte Nummer. Die Karten tragen Code 39 mit der vollen Nummer samt
-Bindestrich und laufender Endnummer (etwa `01234567-01`); das ist die Vorgabe
-(`LEER.strichcodeArt` in `src/daten.ts`).
+Die Karten tragen Code 39 mit der vollen Nummer samt Bindestrich und laufender
+Endnummer, etwa `01234567-01`. Das ist die Vorgabe. Unter „Strichcode anpassen“
+lassen sich Art (Code 39 oder Code 128) und ein abweichender Inhalt setzen.
 
 Apple Wallet zeichnet von den eindimensionalen Codes nur Code 128 selbst. Bei
-Code 39 legt der Dienst den Strichcode als Bild in den Pass (Passart
-`storeCard`), dort ist dann kein Platz für das Foto. Google Wallet kennt beide.
+Code 39 legt der Dienst deshalb ein Streifenbild in die Karte (Passart
+`storeCard`): links das Foto, daneben der Strichcode. Neben dem Foto ist ein
+Modul des Strichcodes einen Punkt breit, etwa 0,16 mm; ohne Foto ist er rund ein
+Drittel breiter. Ob das Terminal ihn so vom Bildschirm liest, ist am Gerät zu
+prüfen. Google Wallet zeichnet Code 39 selbst, nimmt aber keine Fotos an, weil
+Bilder dort unter einer öffentlichen Adresse liegen müssten.
 
 ## Berechtigungen
 
 Der Katalog steht in `src/berechtigungen.ts`: Fahrerlaubnisklassen,
 Fahrberechtigungen, Atemschutzgeräteträger und weitere. Ein neuer Eintrag dort
-erscheint in Maske, Ausweis und Pässen. Befristete Einträge fragen nach einem
-Ablaufdatum, abgelaufene sind auf dem Ausweis durchgestrichen. Was im Katalog
+erscheint in der Maske und auf den Karten. Befristete Einträge fragen nach einem
+Ablaufdatum. Was im Katalog
 fehlt, trägt man als eigene Berechtigung frei ein.
 
 ## Entwickeln
 
 ```bash
 npm install
-npm run web          # App unter http://localhost:5173
+npm run web          # Seite unter http://localhost:5173
 npx vitest run       # Tests
 npm run build        # dist-web/ und dist-dienst/dienst.mjs
 DA_PORT=8080 npm start
 ```
 
-Ohne Apple- und Google-Angaben läuft der Dienst trotzdem und liefert die App aus;
-die Wallet-Knöpfe bleiben dann verborgen.
+Ohne Apple- und Google-Angaben läuft der Dienst trotzdem und liefert die Seite
+aus; sie meldet dann, dass der Server keine Karten ausstellt.
 
 Die Tests prüfen die Strichcodes gegen JsBarcode, die Signatur des Apple-Passes
 mit OpenSSL gegen ein selbst ausgestelltes Zertifikat und die Signatur des
@@ -79,9 +83,9 @@ auf `main`, sobald die Secrets `PLESK_HOST`, `PLESK_USER`, `PLESK_SSH_KEY`,
 `PLESK_KNOWN_HOSTS` gesetzt sind und die Repository-Variable `PLESK_DEPLOY` auf
 `an` steht.
 
-Die App lässt sich auch getrennt hosten, etwa auf GitHub Pages: mit
+Die Seite lässt sich auch getrennt hosten, etwa auf GitHub Pages: mit
 `VITE_WALLET_DIENST=https://<Server>/wallet npm run web:build` bauen und die
-Adresse der App beim Dienst in `DA_URSPRUENGE` eintragen.
+Adresse der Seite beim Dienst in `DA_URSPRUENGE` eintragen.
 
 ### Apple Wallet einrichten
 
@@ -107,11 +111,10 @@ Voraussetzung ist ein Apple-Developer-Konto.
 3. In der Google Cloud Console ein Dienstkonto anlegen, in der Wallet Console
    als Nutzer eintragen und seine Schlüsseldatei als
    `geheim/google-dienstkonto.json` ablegen.
-4. `DA_ADRESSE` auf die Adresse der App setzen.
+4. `DA_ADRESSE` auf die Adresse der Seite setzen.
 
-Der Pass steckt vollständig im Speichern-Link. Deshalb fehlt bei Google das Foto
-(Google nimmt Bilder nur von öffentlichen Adressen), und Berechtigungen stehen
-dort als Kurzzeichen.
+Die Karte steckt vollständig im Speichern-Link. Deshalb stehen Berechtigungen
+bei Google als Kurzzeichen.
 
 ## Lizenz
 

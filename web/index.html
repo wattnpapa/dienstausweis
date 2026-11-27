@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Dienstausweis digital – mit Strichcode für die Zeiterfassung</title>
-  <meta name="description" content="Digitale Kopie des THW-Dienstausweises auf dem Telefon: Strichcode für das Zeiterfassungsterminal, Berechtigungen, Apple Wallet und Google Wallet. Die Daten bleiben auf dem Gerät." />
+  <title>THW-Ausweis für Apple Wallet und Google Wallet</title>
+  <meta name="description" content="Erzeugt aus den Angaben deines THW-Ausweises eine Karte für Apple Wallet oder Google Wallet, mit Strichcode für das Zeiterfassungsterminal und deinen Berechtigungen. Ohne Konto, ohne Speicherung auf dem Server." />
   <meta name="theme-color" content="#12275e" />
   <meta name="color-scheme" content="light dark" />
   <style>
@@ -15,7 +15,6 @@
   </style>
   <link rel="icon" type="image/svg+xml" href="./icon.svg" />
   <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
-  <link rel="manifest" href="./manifest.webmanifest" />
   <script>
     // Anzeigemodus vor dem ersten Malen anwenden, sonst blitzt die Seite nachts erst hell auf.
     try {
@@ -36,7 +35,7 @@
     <header class="seiten-kopf">
       <div class="kopf-inhalt">
         <div class="titelzeile">
-          <h1>Dienstausweis</h1>
+          <h1>THW-Ausweis für die Wallet</h1>
           <div class="anzeige-schalter" role="group" aria-label="Anzeige">
             <button type="button" data-modus="standard" title="Normale, helle Darstellung">Standard</button>
             <button type="button" data-modus="feld" title="Große Tippziele und hoher Kontrast für draußen">Feld</button>
@@ -45,76 +44,15 @@
           </div>
         </div>
         <p class="modus-erklaerung" id="modus-erklaerung" aria-live="polite"></p>
-        <nav class="reiter" role="tablist" aria-label="Ansicht">
-          <button type="button" role="tab" id="reiter-ausweis" aria-controls="ansicht-ausweis" aria-selected="true">Ausweis</button>
-          <button type="button" role="tab" id="reiter-daten" aria-controls="ansicht-daten" aria-selected="false" tabindex="-1">Daten<span class="lang"> eintragen</span></button>
-        </nav>
       </div>
     </header>
 
     <main id="inhalt" tabindex="-1">
-      <p class="warnung" id="speicher-warnung" role="alert" hidden>Der Browser lässt hier nichts speichern (Privatmodus?). Der Ausweis ist nach dem Schließen der Seite weg.</p>
+      <p class="einleitung">Trag die Angaben von deinem THW-Ausweis ein und leg ihn als Karte in Apple Wallet oder Google Wallet: mit Strichcode für das Zeiterfassungsterminal und deinen Berechtigungen.</p>
+      <p class="offline-badge">✓ Ohne Konto. Der Server signiert die Karte und speichert nichts.</p>
+      <p class="warnung" id="speicher-warnung" role="alert" hidden>Der Browser lässt hier nichts speichern (Privatmodus?). Die Eingaben sind nach dem Schließen der Seite weg.</p>
 
-      <!-- ================= Ausweis ================= -->
-      <section id="ansicht-ausweis" role="tabpanel" aria-labelledby="reiter-ausweis">
-        <div id="ausweis-leer" hidden>
-          <p class="einleitung">Hier legst du eine digitale Kopie deines Dienstausweises an: mit Strichcode für das Zeiterfassungsterminal und deinen Berechtigungen. Auf Wunsch kommt sie in Apple Wallet oder Google Wallet.</p>
-          <p class="offline-badge">✓ Die Daten bleiben auf diesem Gerät.<span id="offline-stand" hidden> Startet nach dem ersten Aufruf auch ohne Netz.</span></p>
-          <div class="aktionen"><button type="button" class="primaer" id="leer-zur-maske">Daten eintragen</button></div>
-        </div>
-
-        <div id="ausweis-voll" class="ausweis-seite" hidden>
-          <div class="ausweis-spalte">
-            <p class="alarm-kasten" id="abgelaufen" role="status" hidden></p>
-
-            <article class="ausweis" aria-label="THW-Ausweis">
-              <header class="ausweis-kopf">
-                <span class="ausweis-traeger">Bundesanstalt Technisches Hilfswerk</span>
-                <span class="ausweis-titel">THW-Ausweis</span>
-              </header>
-              <div class="ausweis-rumpf">
-                <div class="ausweis-foto" id="a-foto"></div>
-                <dl class="ausweis-angaben">
-                  <div><dt class="nur-sr">Ausweisnummer</dt><dd id="a-nummer" class="daten"></dd></div>
-                  <div><dd id="a-nachname" class="ausweis-name"></dd><dt>Name</dt></div>
-                  <div><dd id="a-vorname" class="ausweis-name"></dd><dt>Vorname</dt></div>
-                  <div><dd id="a-geburtsdatum"></dd><dt>Geburtstag</dt></div>
-                  <div><dd id="a-gueltig"></dd><dt>Gültig bis</dt></div>
-                  <div id="a-stelle-zeile"><dd id="a-dienststelle"></dd><dt>Dienststelle</dt></div>
-                </dl>
-              </div>
-              <ul class="marken" id="a-marken" aria-label="Berechtigungen"></ul>
-              <button type="button" class="strichcode-feld" id="a-strichcode" aria-label="Strichcode groß zeigen"></button>
-              <p class="ausweis-fuss">Digitale Kopie · kein amtliches Dokument</p>
-            </article>
-
-            <div class="aktionen">
-              <button type="button" class="primaer" id="gross-oeffnen">Strichcode groß zeigen</button>
-              <button type="button" id="zur-maske">Daten ändern</button>
-            </div>
-          </div>
-
-          <div class="ausweis-spalte">
-            <section class="karte" id="rechte-karte" hidden>
-              <h2>Berechtigungen</h2>
-              <ul class="rechte-liste" id="rechte-liste"></ul>
-            </section>
-
-            <section class="karte" id="wallet-karte">
-              <h2>In die Wallet legen</h2>
-              <p class="nebentext" id="wallet-text">Prüfe, ob der Server Wallet-Pässe ausstellt …</p>
-              <div class="aktionen" id="wallet-knoepfe" hidden>
-                <button type="button" id="wallet-apple" hidden>Zu Apple Wallet hinzufügen</button>
-                <button type="button" id="wallet-google" hidden>In Google Wallet speichern</button>
-              </div>
-              <p class="hinweis" id="wallet-hinweis" hidden>Für den Pass gehen Ausweisdaten und Foto einmal an den Server dieser Seite. Er signiert sie und speichert nichts. Bei Google Wallet liegt der Pass danach in deinem Google-Konto.</p>
-            </section>
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= Daten ================= -->
-      <section id="ansicht-daten" role="tabpanel" aria-labelledby="reiter-daten" hidden>
+      <section id="ansicht-daten">
         <form id="maske" novalidate autocomplete="off">
           <section class="karte">
             <h2>Ausweis</h2>
@@ -140,7 +78,7 @@
             <div class="foto-zeile">
               <div class="ausweis-foto" id="m-foto"></div>
               <div>
-                <p class="nebentext">Freiwillig. Das Bild wird im Browser auf Passbildformat zugeschnitten und bleibt auf diesem Gerät.</p>
+                <p class="nebentext">Freiwillig. Das Bild wird im Browser auf Passbildformat zugeschnitten. In Apple Wallet steht es auf der Karte, Google Wallet nimmt keine Fotos an.</p>
                 <div class="aktionen">
                   <label class="datei-knopf" id="foto-waehlen">Foto wählen<input type="file" id="foto-datei" accept="image/*" class="nur-sr" /></label>
                   <button type="button" id="foto-entfernen" hidden>Foto entfernen</button>
@@ -160,49 +98,45 @@
             </fieldset>
           </section>
 
-          <details class="karte" id="strichcode-karte">
-            <summary><span>Strichcode</span> <span class="stand" id="strichcode-stand"></span></summary>
-            <p class="nebentext">Der Strichcode trägt die Dienstausweisnummer. Liest das Terminal ihn nicht, vergleiche ihn mit dem auf deiner Karte und stelle die Art um.</p>
-            <div class="zeile">
-              <label class="feld mittel">Art
-                <select name="strichcodeArt">
-                  <option value="code39">Code 39</option>
-                  <option value="code128">Code 128</option>
-                </select>
-              </label>
-              <label class="feld">Abweichender Inhalt
-                <input type="text" name="strichcodeInhalt" maxlength="40" spellcheck="false" class="daten" />
-              </label>
-            </div>
+          <section class="karte" id="strichcode-karte">
+            <h2>Strichcode</h2>
+            <p class="nebentext">So kommt der Strichcode auf die Karte. Vergleiche ihn mit dem auf deinem Ausweis: Er trägt die volle Nummer mit Bindestrich und Endnummer.</p>
+            <div class="strichcode-feld" id="strichcode-vorschau"></div>
             <p class="fehler" id="strichcode-fehler" role="alert" hidden></p>
-          </details>
+            <details class="unterbereich">
+              <summary>Strichcode anpassen <span class="stand" id="strichcode-stand"></span></summary>
+              <div class="zeile">
+                <label class="feld mittel">Art
+                  <select name="strichcodeArt">
+                    <option value="code39">Code 39</option>
+                    <option value="code128">Code 128</option>
+                  </select>
+                </label>
+                <label class="feld">Abweichender Inhalt
+                  <input type="text" name="strichcodeInhalt" maxlength="40" spellcheck="false" class="daten" />
+                </label>
+              </div>
+            </details>
+          </section>
 
-          <details class="karte" id="sicherung-karte">
-            <summary><span>Datensicherung</span></summary>
-            <p class="nebentext">Der Ausweis liegt nur im Speicher dieses Browsers. Mit einer Sicherungsdatei bringst du ihn auf ein anderes Gerät oder holst ihn zurück, wenn der Browser seine Daten verliert.</p>
-            <div class="aktionen">
-              <button type="button" id="sicherung-speichern">Sicherungsdatei speichern</button>
-              <label class="datei-knopf">Sicherungsdatei laden<input type="file" id="sicherung-datei" accept="application/json,.json" class="nur-sr" /></label>
-              <button type="button" id="alles-loeschen">Ausweis von diesem Gerät löschen</button>
+          <section class="karte" id="wallet-karte">
+            <h2>Karte erstellen</h2>
+            <p class="fehler" id="wallet-fehlt" hidden></p>
+            <p class="nebentext" id="wallet-text">Prüfe, ob der Server Karten ausstellt …</p>
+            <div class="aktionen" id="wallet-knoepfe" hidden>
+              <button type="button" class="primaer" id="wallet-apple" hidden>Zu Apple Wallet hinzufügen</button>
+              <button type="button" class="primaer" id="wallet-google" hidden>In Google Wallet speichern</button>
             </div>
-          </details>
+            <p class="hinweis" id="wallet-hinweis" hidden>Dafür gehen deine Angaben und das Foto einmal an den Server dieser Seite. Er signiert die Karte und speichert nichts. Bei Google Wallet liegt die Karte danach in deinem Google-Konto, dort ohne Foto.</p>
+          </section>
 
           <p class="speicher-stand" id="speicher-stand" aria-live="polite"></p>
           <div class="aktionen">
-            <button type="button" class="primaer" id="zum-ausweis">Ausweis ansehen</button>
+            <button type="button" id="alles-loeschen">Eingaben von diesem Gerät löschen</button>
           </div>
         </form>
       </section>
     </main>
-
-    <dialog class="gross" id="gross" aria-label="Strichcode">
-      <div class="gross-inhalt">
-        <div class="gross-code" id="gross-code"></div>
-        <p class="gross-nummer daten" id="gross-nummer"></p>
-        <p class="gross-name" id="gross-name"></p>
-      </div>
-      <button type="button" id="gross-schliessen">Schließen</button>
-    </dialog>
 
     <div class="kurzmeldung" id="kurzmeldung" role="status" hidden>
       <span id="kurzmeldung-text"></span>
@@ -225,7 +159,7 @@
           <a href="./datenschutz.html">Datenschutz</a>
         </div>
       </div>
-      <p class="fuss-marke">Lizenz EUPL-1.2. Ohne Anmeldung, ohne Speicherung auf einem Server. Kein amtliches Angebot des THW und kein Ersatz für den Dienstausweis. <span id="fassung"></span></p>
+      <p class="fuss-marke">Lizenz EUPL-1.2. Ohne Anmeldung, ohne Speicherung auf einem Server. Kein amtliches Angebot des THW; die Karte ist eine selbst erstellte Kopie und kein Ersatz für den THW-Ausweis. <span id="fassung"></span></p>
       <nav class="werkzeuge" aria-label="Weitere Werkzeuge">
         <a href="https://erfassungsbogen.app/" rel="noopener" title="Externe Seite">erfassungsbogen.app</a><span aria-hidden="true">·</span>
         <a href="https://einsatzauftrag.app/" rel="noopener" title="Externe Seite">einsatzauftrag.app</a><span aria-hidden="true">·</span>

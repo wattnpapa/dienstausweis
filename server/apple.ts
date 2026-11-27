@@ -3,7 +3,7 @@ import forge from "node-forge";
 import {
     berechtigungenAnzeige, berechtigungenText, datumDeutsch, strichcodeInhalt, vollerName, type Ausweis
 } from "../src/daten.js";
-import { strichcodeBild, symbol } from "./bild.js";
+import { pngLesen, skaliert, strichcodeBild, symbol } from "./bild.js";
 import { zip } from "./zip.js";
 
 // Apple-Wallet-Pass (.pkpass): pass.json und Bilder, eine Liste ihrer
@@ -56,9 +56,10 @@ export function passJson(ausweis: Ausweis, einstellung: AppleEinstellung, serien
         ["hinweis", "Hinweis", HINWEIS]
     );
     const kurzzeile = felder(["kurz", "Berechtigungen", kurz]);
-    // Mit Foto: Passart „generic“ (Name groß, Foto rechts). Mit Strichcodebild:
-    // „storeCard“, weil nur dort ein Streifenbild erlaubt ist; primäre Felder
-    // lägen über dem Bild, deshalb steht der Name darunter.
+    // Code 128: Passart „generic“ (Name groß, Foto rechts, Strichcode von Wallet).
+    // Code 39: „storeCard“, weil nur dort ein Streifenbild erlaubt ist; darin
+    // stehen Foto und Strichcode. Primäre Felder lägen über dem Bild, deshalb
+    // steht der Name darunter.
     const aufbau = nativ
         ? { headerFields: kopf, primaryFields: name, secondaryFields: dienststelle, auxiliaryFields: [...angaben, ...kurzzeile], backFields: rueckseite }
         : { headerFields: kopf, secondaryFields: [...name, ...dienststelle], auxiliaryFields: [...angaben, ...kurzzeile], backFields: rueckseite };
@@ -114,10 +115,12 @@ export function signiere(manifest: Buffer, einstellung: AppleEinstellung, jetzt:
 
 /**
  * Baut den fertigen Pass.
- * @param foto PNG, höchstens 180 × 240 Pixel; nur bei Code 128 im Pass (siehe passJson)
+ * @param foto PNG im Seitenverhältnis 3:4, höchstens 324 × 432 Pixel
+ * @throws wenn das Foto kein lesbares PNG ist oder der Strichcode nicht in den Pass passt
  */
 export function applePass(ausweis: Ausweis, foto: Uint8Array | null, einstellung: AppleEinstellung, jetzt = new Date()): Buffer {
     const nativ = ausweis.strichcodeArt === "code128";
+    const bild = foto === null ? null : pngLesen(foto);
     const dateien = new Map<string, Uint8Array>();
     const pass = passJson(ausweis, einstellung, randomUUID());
     dateien.set("pass.json", Buffer.from(JSON.stringify(pass), "utf8"));
@@ -125,14 +128,15 @@ export function applePass(ausweis: Ausweis, foto: Uint8Array | null, einstellung
     dateien.set("icon@2x.png", symbol(58));
     dateien.set("icon@3x.png", symbol(87));
     if (nativ) {
-        if (foto !== null) {
-            dateien.set("thumbnail@2x.png", foto);
+        if (bild !== null) {
+            dateien.set("thumbnail@2x.png", skaliert(bild, 180, 240).png());
         }
     } else {
+        // Streifenbild: links das Foto, daneben der Strichcode. Geräte mit
+        // einfacher Auflösung gibt es nicht mehr, deshalb nur @2x und @3x.
         const inhalt = strichcodeInhalt(ausweis);
-        dateien.set("strip.png", strichcodeBild(ausweis.strichcodeArt, inhalt, 375, 144));
-        dateien.set("strip@2x.png", strichcodeBild(ausweis.strichcodeArt, inhalt, 750, 288));
-        dateien.set("strip@3x.png", strichcodeBild(ausweis.strichcodeArt, inhalt, 1125, 432));
+        dateien.set("strip@2x.png", strichcodeBild(ausweis.strichcodeArt, inhalt, 750, 288, bild));
+        dateien.set("strip@3x.png", strichcodeBild(ausweis.strichcodeArt, inhalt, 1125, 432, bild));
     }
     const summen: Record<string, string> = {};
     for (const [name, inhalt] of dateien) {

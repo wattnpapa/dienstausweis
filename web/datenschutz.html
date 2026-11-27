@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Datenschutz – Dienstausweis</title>
-  <meta name="description" content="Datenschutzhinweise der Dienstausweis-App: was auf dem Gerät bleibt und was beim Ausstellen eines Wallet-Passes geschieht." />
+  <meta name="description" content="Datenschutzhinweise: was auf dem Gerät bleibt und was beim Erstellen einer Wallet-Karte geschieht." />
   <meta name="theme-color" content="#12275e" />
   <meta name="color-scheme" content="light dark" />
   <style>
@@ -60,24 +60,24 @@
         <code>da.foto.v1</code> und <code>da.anzeigemodus.v1</code>. Das Foto wird im Browser zugeschnitten und
         verkleinert, das Original verlässt das Gerät nicht. Es gibt kein Konto, keine Cookies und keine
         Reichweitenmessung.</p>
-      <p>Löschen kannst du die Daten unter „Daten eintragen“ → „Datensicherung“ → „Ausweis von diesem Gerät löschen“
-        oder über die Website-Daten deines Browsers. Eine Sicherungsdatei, die du selbst speicherst, enthält die Angaben
-        im Klartext und liegt dort, wo du sie ablegst.</p>
+      <p>Gespeichert wird, damit du die Karte später mit geänderten Angaben neu erstellen kannst, ohne alles erneut
+        einzutippen. Löschen kannst du die Eingaben mit „Eingaben von diesem Gerät löschen“ am Ende der Seite oder über
+        die Website-Daten deines Browsers.</p>
 
       <h2>3. Aufruf der Seite</h2>
       <p>Beim Abruf der Seite verarbeitet der Webserver technisch notwendige Verbindungsdaten wie die IP-Adresse, den
-        Zeitpunkt und die abgerufene Datei (Art. 6 Abs. 1 lit. f DSGVO, sicherer und stabiler Betrieb). Die App lädt keine
-        Schriften, Skripte oder Bilder von fremden Servern. Nach dem ersten Aufruf startet sie aus dem Speicher des
-        Browsers, auch ohne Netz.</p>
+        Zeitpunkt und die abgerufene Datei (Art. 6 Abs. 1 lit. f DSGVO, sicherer und stabiler Betrieb). Die Seite lädt keine
+        Schriften, Skripte oder Bilder von fremden Servern.</p>
 
-      <h2>4. Wallet-Pass ausstellen</h2>
+      <h2>4. Wallet-Karte erstellen</h2>
       <p>Nur wenn du auf „Zu Apple Wallet hinzufügen“ oder „In Google Wallet speichern“ tippst, sendet der Browser die
         Ausweisdaten an den Server dieser Seite, für Apple Wallet zusätzlich das verkleinerte Foto. Ein Pass muss mit
         einem geheimen Schlüssel signiert werden, und der kann nicht im Browser liegen. Der Server baut den Pass im
         Arbeitsspeicher, signiert ihn, schickt ihn zurück und verwirft die Daten. Er schreibt sie in keine Datenbank,
         keine Datei und kein Protokoll (Art. 6 Abs. 1 lit. b DSGVO, Erfüllung deiner Anfrage). Um Missbrauch zu bremsen,
         zählt er für höchstens zehn Minuten im Arbeitsspeicher, wie viele Pässe eine IP-Adresse angefordert hat.</p>
-      <p>Apple Wallet: Der Pass ist eine Datei, die dein Gerät in die Wallet übernimmt. Je nach deinen
+      <p>Apple Wallet: Die Karte ist eine Datei, die dein Gerät in die Wallet übernimmt. Sie enthält
+        deine Angaben, den Strichcode und, wenn du eines gewählt hast, das Foto. Je nach deinen
         iCloud-Einstellungen gleicht Apple ihn mit deinen anderen Geräten ab.</p>
       <p>Google Wallet: Der Server liefert einen signierten Link zurück, der die Ausweisdaten ohne Foto enthält. Öffnet
         dein Gerät diesen Link, erhält Google die Daten und speichert den Pass in deinem Google-Konto. Dafür gelten die

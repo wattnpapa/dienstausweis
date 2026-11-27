@@ -847,60 +847,20 @@ table.uebersicht td.mehrseitig { font-weight: 700; color: var(--warn-text); back
    Der Strichcode steht in allen Anzeigemodi schwarz auf weiß,
    sonst liest ihn das Terminal nicht.
    =============================================================== */
-:root { --satzspiegel: 60rem; }
+:root { --satzspiegel: 44rem; }
 
-.ausweis-seite { display: grid; gap: var(--r-5); align-items: start; }
-@media (min-width: 56rem) { .ausweis-seite { grid-template-columns: minmax(0, 27rem) minmax(0, 1fr); } }
-.ausweis-spalte { min-width: 0; }
-.ausweis-spalte > .alarm-kasten { margin: 0 0 var(--r-3); font-weight: 600; }
-
-.ausweis {
-  background: var(--flaeche); border: var(--strich) solid var(--linie-stark);
-  max-width: 27rem; display: flex; flex-direction: column;
-}
-/* Heller Kopf wie auf der Karte: Träger klein, darunter der Titel. */
-.ausweis-kopf {
-  background: var(--flaeche-2); color: var(--text);
-  border-bottom: 3px solid var(--akzent);
-  padding: var(--r-3) var(--r-4); display: flex; flex-direction: column; gap: 0.1rem;
-}
-.ausweis-traeger { font-size: var(--t-s); font-weight: 600; line-height: 1.25; }
-.ausweis-titel { font-size: var(--t-xl); font-weight: 700; letter-spacing: -0.01em; color: var(--akzent); }
-.dunkel-modus .ausweis-titel, .nacht-modus .ausweis-titel { color: var(--text); }
-
-.ausweis-rumpf { display: flex; gap: var(--r-4); padding: var(--r-4); }
 .ausweis-foto {
-  flex: 0 0 6rem; width: 6rem; aspect-ratio: 3 / 4; align-self: flex-start;
+  flex: 0 0 7rem; width: 7rem; aspect-ratio: 3 / 4; align-self: flex-start;
   border: var(--strich) solid var(--linie-stark); background: var(--flaeche-2);
   display: grid; place-items: center; overflow: hidden;
 }
 .ausweis-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ausweis-foto.ohne { border-style: dashed; }
 .ausweis-foto span { font-size: var(--t-xs); color: var(--text-2); text-align: center; padding: var(--r-1); }
-/* Auf dem Ausweis ohne Foto keinen leeren Rahmen zeigen. */
-.ausweis .ausweis-foto.ohne { display: none; }
-
-/* Wie auf der Karte: erst der Wert, darunter klein die Bezeichnung. */
-.ausweis-angaben { flex: 1 1 auto; min-width: 0; margin: 0; display: flex; flex-direction: column; gap: var(--r-2); }
-.ausweis-angaben > div { display: flex; flex-direction: column; }
-.ausweis-angaben dt { font-size: 0.6875rem; letter-spacing: 0.02em; color: var(--text-2); line-height: 1.3; }
-.ausweis-angaben dd { margin: 0; font-size: var(--t-m); font-weight: 600; line-height: 1.25; font-variant-numeric: tabular-nums; }
-.ausweis-angaben dd.ausweis-name { font-size: var(--t-l); font-weight: 700; }
-.ausweis-angaben dd.daten { font-size: var(--t-l); font-weight: 400; letter-spacing: 0.04em; margin-bottom: var(--r-1); }
-.ausweis-foto { flex-basis: 7rem; width: 7rem; }
-
-.marken { list-style: none; margin: 0; padding: 0 var(--r-4) var(--r-4); display: flex; flex-wrap: wrap; gap: var(--r-2); }
-.marken li {
-  font-size: var(--t-s); font-weight: 700; padding: 0.15rem 0.5rem;
-  border: var(--strich-stark) solid var(--akzent); color: var(--akzent);
-}
-.dunkel-modus .marken li, .nacht-modus .marken li { border-color: var(--linie-stark); color: var(--text); }
-/* Abgelaufen: nicht nur über die Farbe, auch gestrichelt und durchgestrichen. */
-.marken li.abgelaufen { border-style: dashed; border-color: var(--alarm); color: var(--alarm); text-decoration: line-through; }
 
 .strichcode-feld {
   display: flex; flex-direction: column; align-items: stretch; gap: var(--r-1);
-  width: auto; margin: 0 var(--r-4); padding: var(--r-3) 0 var(--r-2);
+  max-width: 26rem; margin: var(--r-3) 0 0; padding: var(--r-3) 0 var(--r-2);
   background: #fff; color: #000; border: var(--strich) solid var(--linie-stark); min-height: 0;
 }
 .strichcode-feld svg { display: block; width: 100%; height: 4.5rem; }
@@ -908,37 +868,6 @@ table.uebersicht td.mehrseitig { font-weight: 700; color: var(--warn-text); back
 .strichcode-feld .fehler { padding: 0 var(--r-3); font-size: var(--t-s); }
 .strichcode-feld:disabled { opacity: 1; }
 @media (hover: hover) { .strichcode-feld:not(:disabled):hover { color: #000; border-color: var(--akzent); } }
-.ausweis-fuss {
-  margin: 0; padding: var(--r-2) var(--r-4) var(--r-3);
-  font-family: var(--schrift-daten); font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-2);
-}
-
-.rechte-liste { list-style: none; margin: 0; padding: 0; }
-.rechte-liste li {
-  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--r-3);
-  padding: var(--r-2) 0; border-top: var(--strich) solid var(--linie-fein);
-}
-.rechte-liste li:first-child { border-top: none; padding-top: 0; }
-.rechte-liste .frist { color: var(--text-2); font-size: var(--t-s); font-variant-numeric: tabular-nums; }
-.rechte-liste li.abgelaufen .frist { color: var(--alarm); font-weight: 600; }
-
-/* ---- Strichcode groß: ganzer Bildschirm, weiß ---------------------- */
-dialog.gross {
-  width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: var(--r-4);
-  border: none; background: #fff; color: #000;
-}
-dialog.gross[open] { display: flex; flex-direction: column; align-items: stretch; gap: var(--r-4); }
-.gross-inhalt { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: var(--r-2); }
-.gross-code { width: min(100%, 44rem); }
-.gross-code svg { display: block; width: 100%; height: min(40dvh, 14rem); }
-.gross-nummer { margin: 0; font-size: var(--t-xl); letter-spacing: 0.25em; }
-.gross-name { margin: 0; color: #444; }
-/* Quer gelegt: Der Strichcode nutzt die lange Seite des Telefons. */
-dialog.gross.quer .gross-inhalt { transform: rotate(90deg); width: calc(100dvh - 8rem); align-self: center; }
-dialog.gross.quer .gross-code { width: 100%; }
-dialog.gross.quer .gross-code svg { height: min(55vw, 14rem); }
-dialog.gross button { background: #fff; color: #000; border-color: #000; font-size: var(--t-m); min-height: 3.25rem; }
-
 /* ---- Maske --------------------------------------------------------- */
 #maske .karte h2 { margin-bottom: var(--r-1); }
 .foto-zeile { display: flex; gap: var(--r-4); align-items: flex-start; margin-top: var(--r-3); }
@@ -956,4 +885,12 @@ label.feld.frist { flex: 0 0 11rem; margin: 0 0 var(--r-2); }
 .eigene-zeile label.feld { flex: 1 1 12rem; margin: 0; }
 .eigene-zeile label.feld.frist { flex: 0 0 11rem; }
 .speicher-stand { min-height: 1.5em; margin: var(--r-3) 0 0; font-size: var(--t-s); font-weight: 600; color: var(--gut); }
-#ansicht-ausweis .aktionen { margin-bottom: var(--r-2); }
+.strichcode-feld .leer { padding: var(--r-3); font-size: var(--t-s); color: #444; text-align: center; }
+details.unterbereich { margin-top: var(--r-3); }
+details.unterbereich > summary {
+  cursor: pointer; font-weight: 600; font-size: var(--t-s);
+  min-height: calc(var(--ziel-basis) + var(--ziel)); display: flex; align-items: center; gap: var(--r-2);
+}
+#wallet-karte { border-left: 6px solid var(--akzent); }
+#wallet-karte .aktionen { margin-top: var(--r-3); }
+#wallet-fehlt { margin-bottom: var(--r-2); }

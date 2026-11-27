@@ -2,7 +2,7 @@
   "name": "dienstausweis",
   "version": "0.1.0",
   "private": true,
-  "description": "Digitale Kopie des THW-Dienstausweises als Web-App, mit Strichcode für die Zeiterfassung und Export nach Apple Wallet und Google Wallet.",
+  "description": "Erzeugt aus den Angaben des THW-Ausweises eine Karte für Apple Wallet und Google Wallet, mit Strichcode für die Zeiterfassung.",
   "license": "EUPL-1.2",
   "author": {
     "name": "Johannes Rudolph"
@@ -15,8 +15,7 @@
     "web:build": "vite build --config web/vite.config.ts",
     "dienst:build": "esbuild server/start.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist-dienst/dienst.mjs --banner:js=\"import{createRequire}from'node:module';const require=createRequire(import.meta.url);\"",
     "build": "npm run web:build && npm run dienst:build",
-    "start": "node dist-dienst/dienst.mjs",
-    "symbole": "node scripts/symbole.mjs"
+    "start": "node dist-dienst/dienst.mjs"
   },
   "devDependencies": {
     "@fontsource-variable/archivo": "^5.3.0",

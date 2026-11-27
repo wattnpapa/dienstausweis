@@ -1,4 +1,4 @@
-import { crc32, deflateSync } from "node:zlib";
+import { crc32, deflateSync, inflateSync } from "node:zlib";
 import { RUHEZONE, strichcodeLaeufe, strichcodeModule, type StrichcodeArt } from "../src/strichcode.js";
 
 // Kleine PNG-Werkstatt für die Bilder im Apple-Pass: Symbol und Strichcode.
@@ -22,6 +22,29 @@ export class Bild {
         for (let zeile = Math.max(0, y); zeile < Math.min(this.hoehe, y + hoehe); zeile++) {
             for (let spalte = Math.max(0, x); spalte < Math.min(this.breite, x + breite); spalte++) {
                 this.pixel.set(farbe, (zeile * this.breite + spalte) * 3);
+            }
+        }
+    }
+
+    /** Zeichnet ein anderes Bild in das Rechteck; verkleinert wird über den Mittelwert der Fläche. */
+    bild(quelle: Bild, x: number, y: number, breite: number, hoehe: number): void {
+        for (let zeile = 0; zeile < hoehe; zeile++) {
+            const oben = Math.floor(zeile * quelle.hoehe / hoehe);
+            const unten = Math.max(oben + 1, Math.floor((zeile + 1) * quelle.hoehe / hoehe));
+            for (let spalte = 0; spalte < breite; spalte++) {
+                const links = Math.floor(spalte * quelle.breite / breite);
+                const rechts = Math.max(links + 1, Math.floor((spalte + 1) * quelle.breite / breite));
+                const summe = [0, 0, 0];
+                for (let qy = oben; qy < unten; qy++) {
+                    for (let qx = links; qx < rechts; qx++) {
+                        const stelle = (qy * quelle.breite + qx) * 3;
+                        summe[0]! += quelle.pixel[stelle]!;
+                        summe[1]! += quelle.pixel[stelle + 1]!;
+                        summe[2]! += quelle.pixel[stelle + 2]!;
+                    }
+                }
+                const zahl = (unten - oben) * (rechts - links);
+                this.rechteck(x + spalte, y + zeile, 1, 1, [summe[0]! / zahl, summe[1]! / zahl, summe[2]! / zahl]);
             }
         }
     }
@@ -78,19 +101,93 @@ export function symbol(kante: number): Buffer {
 }
 
 /**
- * Strichcode schwarz auf weiß, mittig in einem Bild der gegebenen Größe. Die
- * Modulbreite ist ganzzahlig, damit keine Kante verschmiert.
+ * Liest ein PNG, wie es ein Browser aus einer Zeichenfläche schreibt: 8 Bit,
+ * RGB oder RGBA, ohne Zeilensprung. Durchsichtiges wird weiß.
+ * @throws bei jedem anderen oder beschädigten PNG
  */
-export function strichcodeBild(art: StrichcodeArt, inhalt: string, breite: number, hoehe: number): Buffer {
+export function pngLesen(daten: Uint8Array): Bild {
+    const puffer = Buffer.from(daten.buffer, daten.byteOffset, daten.byteLength);
+    const masse = pngMasse(puffer);
+    const kanaele = puffer[25] === 6 ? 4 : 3;
+    if (masse === null || masse.breite < 1 || masse.hoehe < 1 || puffer[24] !== 8 || (puffer[25] !== 2 && puffer[25] !== 6) || puffer[28] !== 0) {
+        throw new Error("Dieses PNG kann der Dienst nicht lesen.");
+    }
+    const teile: Buffer[] = [];
+    for (let stelle = 8; stelle + 12 <= puffer.length;) {
+        const laenge = puffer.readUInt32BE(stelle);
+        const art = puffer.toString("latin1", stelle + 4, stelle + 8);
+        if (art === "IDAT") {
+            teile.push(puffer.subarray(stelle + 8, stelle + 8 + laenge));
+        }
+        stelle += 12 + laenge;
+    }
+    const breit = masse.breite * kanaele;
+    const roh = inflateSync(Buffer.concat(teile), { maxOutputLength: (breit + 1) * masse.hoehe });
+    if (roh.length !== (breit + 1) * masse.hoehe) {
+        throw new Error("Das PNG ist unvollständig.");
+    }
+    const bild = new Bild(masse.breite, masse.hoehe, WEISS);
+    let davor = new Uint8Array(breit);
+    for (let zeile = 0; zeile < masse.hoehe; zeile++) {
+        const filter = roh[zeile * (breit + 1)]!;
+        const aktuell = new Uint8Array(roh.subarray(zeile * (breit + 1) + 1, (zeile + 1) * (breit + 1)));
+        for (let i = 0; i < breit; i++) {
+            const links = i >= kanaele ? aktuell[i - kanaele]! : 0;
+            const oben = davor[i]!;
+            const schraeg = i >= kanaele ? davor[i - kanaele]! : 0;
+            let dazu = 0;
+            if (filter === 1) {
+                dazu = links;
+            } else if (filter === 2) {
+                dazu = oben;
+            } else if (filter === 3) {
+                dazu = (links + oben) >> 1;
+            } else if (filter === 4) {
+                const p = links + oben - schraeg;
+                const [pa, pb, pc] = [Math.abs(p - links), Math.abs(p - oben), Math.abs(p - schraeg)];
+                dazu = pa <= pb && pa <= pc ? links : pb <= pc ? oben : schraeg;
+            } else if (filter !== 0) {
+                throw new Error("Das PNG ist beschädigt.");
+            }
+            aktuell[i] = (aktuell[i]! + dazu) & 255;
+        }
+        for (let spalte = 0; spalte < masse.breite; spalte++) {
+            const deckung = kanaele === 4 ? aktuell[spalte * 4 + 3]! / 255 : 1;
+            const misch = (wert: number): number => Math.round(wert * deckung + 255 * (1 - deckung));
+            bild.rechteck(spalte, zeile, 1, 1, [misch(aktuell[spalte * kanaele]!), misch(aktuell[spalte * kanaele + 1]!), misch(aktuell[spalte * kanaele + 2]!)]);
+        }
+        davor = aktuell;
+    }
+    return bild;
+}
+
+/** Bild auf eine neue Größe bringen. */
+export function skaliert(quelle: Bild, breite: number, hoehe: number): Bild {
+    const ziel = new Bild(breite, hoehe, WEISS);
+    ziel.bild(quelle, 0, 0, breite, hoehe);
+    return ziel;
+}
+
+/**
+ * Strichcode schwarz auf weiß als Bild der gegebenen Größe, auf Wunsch mit dem
+ * Passfoto links daneben (3:4, volle Höhe). Die Modulbreite ist ganzzahlig,
+ * damit keine Kante verschmiert.
+ * @throws wenn der Strichcode neben dem Foto keinen Platz mehr hat
+ */
+export function strichcodeBild(art: StrichcodeArt, inhalt: string, breite: number, hoehe: number, foto: Bild | null = null): Buffer {
     const laeufe = strichcodeLaeufe(strichcodeModule(art, inhalt));
     const module = laeufe.reduce((summe, lauf) => summe + lauf, 0) + 2 * RUHEZONE;
-    const modul = Math.floor(breite / module);
+    const fotoBreite = foto ? Math.round(hoehe * 3 / 4) : 0;
+    const modul = Math.floor((breite - fotoBreite) / module);
     if (modul < 1) {
         throw new Error("Der Strichcode ist zu lang für den Pass.");
     }
     const bild = new Bild(breite, hoehe, WEISS);
+    if (foto) {
+        bild.bild(foto, 0, 0, fotoBreite, hoehe);
+    }
     const rand = Math.round(hoehe * 0.14);
-    let x = Math.floor((breite - (module - 2 * RUHEZONE) * modul) / 2);
+    let x = fotoBreite + Math.floor((breite - fotoBreite - (module - 2 * RUHEZONE) * modul) / 2);
     laeufe.forEach((lauf, stelle) => {
         if (stelle % 2 === 0) {
             bild.rechteck(x, rand, lauf * modul, hoehe - 2 * rand, SCHWARZ);

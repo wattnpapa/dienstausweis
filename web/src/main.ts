@@ -1,18 +1,20 @@
 import "./seite.js";
 import { KATALOG, berechtigungsArt } from "../../src/berechtigungen.js";
 import {
-    LEER, abgelaufen, berechtigungenAnzeige, bereinige, datumDeutsch, fehlendeAngaben, strichcodeInhalt, vollerName,
+    LEER, abgelaufen, bereinige, datumDeutsch, fehlendeAngaben, strichcodeInhalt,
     type Ausweis, type Berechtigung
 } from "../../src/daten.js";
 import { RUHEZONE, strichcodeFehler, strichcodeLaeufe, strichcodeModule } from "../../src/strichcode.js";
 import { fotoAusDatei, fotoFuerPass, fotoGueltig } from "./foto.js";
 
-// Die App: Maske, Ausweisansicht, Strichcode, Sicherung und die Knöpfe für die
-// Wallets. Ausweis und Foto liegen nur im localStorage dieses Browsers.
+// Die Seite: Maske, Strichcode-Vorschau und die Knöpfe, die eine Karte für
+// Apple Wallet oder Google Wallet erstellen. Die Eingaben liegen nur im
+// localStorage dieses Browsers, damit man die Karte später mit geänderten
+// Berechtigungen neu erstellen kann.
 
 const AUSWEIS_SCHLUESSEL = "da.ausweis.v1";
 const FOTO_SCHLUESSEL = "da.foto.v1";
-/** Wo der Dienst Pässe signiert. Liegt die App woanders (GitHub Pages), zeigt VITE_WALLET_DIENST dorthin. */
+/** Wo der Dienst Karten signiert. Liegt die Seite woanders (GitHub Pages), zeigt VITE_WALLET_DIENST dorthin. */
 const DIENST = ((import.meta.env["VITE_WALLET_DIENST"] as string | undefined) ?? "./wallet").replace(/\/$/, "");
 
 function el<T extends HTMLElement = HTMLElement>(id: string): T {
@@ -81,7 +83,7 @@ function leer(): boolean {
 function sichere(): void {
     schreibe(AUSWEIS_SCHLUESSEL, leer() ? "" : JSON.stringify(ausweis));
     schreibe(FOTO_SCHLUESSEL, foto);
-    el("speicher-stand").textContent = !speicherGeht || leer() ? "" : "✓ Auf diesem Gerät gespeichert.";
+    el("speicher-stand").textContent = !speicherGeht || leer() ? "" : "✓ Eingaben auf diesem Gerät gespeichert, nicht auf dem Server.";
 }
 
 // ---- Kurzmeldung -----------------------------------------------------------
@@ -118,41 +120,6 @@ function fehlertext(fehler: unknown): string {
     return fehler instanceof Error ? fehler.message : String(fehler);
 }
 
-// ---- Reiter ----------------------------------------------------------------
-
-type Ansicht = "ausweis" | "daten";
-
-function zeige(ansicht: Ansicht, fokus = false): void {
-    for (const name of ["ausweis", "daten"] as const) {
-        const reiter = el(`reiter-${name}`);
-        const aktiv = name === ansicht;
-        reiter.setAttribute("aria-selected", String(aktiv));
-        reiter.tabIndex = aktiv ? 0 : -1;
-        el(`ansicht-${name}`).hidden = !aktiv;
-    }
-    if (ansicht === "ausweis") {
-        zeichneAusweis();
-    }
-    if (fokus) {
-        el("inhalt").focus();
-        window.scrollTo({ top: 0 });
-    }
-}
-
-for (const name of ["ausweis", "daten"] as const) {
-    el(`reiter-${name}`).addEventListener("click", () => zeige(name));
-    el(`reiter-${name}`).addEventListener("keydown", ereignis => {
-        if (ereignis.key === "ArrowLeft" || ereignis.key === "ArrowRight") {
-            const anderer = name === "ausweis" ? "daten" : "ausweis";
-            zeige(anderer);
-            el(`reiter-${anderer}`).focus();
-        }
-    });
-}
-el("leer-zur-maske").addEventListener("click", () => zeige("daten", true));
-el("zur-maske").addEventListener("click", () => zeige("daten", true));
-el("zum-ausweis").addEventListener("click", () => zeige("ausweis", true));
-
 // ---- Strichcode als SVG ----------------------------------------------------
 
 const SVG = "http://www.w3.org/2000/svg";
@@ -184,110 +151,6 @@ function strichcodeSvg(module: string): SVGSVGElement {
     svg.append(striche);
     return svg;
 }
-
-/** Module des aktuellen Ausweises, oder der Grund, warum es keinen Strichcode gibt. */
-function aktuellerStrichcode(): { module: string } | { fehler: string } {
-    const inhalt = strichcodeInhalt(ausweis);
-    const fehler = strichcodeFehler(ausweis.strichcodeArt, inhalt);
-    return fehler === null ? { module: strichcodeModule(ausweis.strichcodeArt, inhalt) } : { fehler };
-}
-
-// ---- Ausweisansicht --------------------------------------------------------
-
-function fotoElement(ziel: HTMLElement): void {
-    ziel.replaceChildren();
-    ziel.classList.toggle("ohne", foto === "");
-    if (foto) {
-        const bild = neu("img");
-        bild.src = foto;
-        bild.alt = "Passfoto";
-        ziel.append(bild);
-    } else {
-        ziel.append(neu("span", "", "kein Foto"));
-    }
-}
-
-function zeichneAusweis(): void {
-    const vollstaendig = fehlendeAngaben(ausweis).length === 0;
-    el("ausweis-leer").hidden = vollstaendig;
-    el("ausweis-voll").hidden = !vollstaendig;
-    if (!vollstaendig) {
-        return;
-    }
-    el("a-dienststelle").textContent = ausweis.dienststelle;
-    el("a-stelle-zeile").hidden = ausweis.dienststelle === "";
-    el("a-nachname").textContent = ausweis.nachname || "–";
-    el("a-vorname").textContent = ausweis.vorname || "–";
-    el("a-geburtsdatum").textContent = datumDeutsch(ausweis.geburtsdatum) || "–";
-    el("a-gueltig").textContent = datumDeutsch(ausweis.gueltigBis) || "–";
-    el("a-nummer").textContent = ausweis.nummer;
-    fotoElement(el("a-foto"));
-
-    const hinweis = el("abgelaufen");
-    hinweis.hidden = !abgelaufen(ausweis.gueltigBis);
-    hinweis.textContent = `Der Dienstausweis ist seit dem ${datumDeutsch(ausweis.gueltigBis)} abgelaufen.`;
-
-    const rechte = berechtigungenAnzeige(ausweis);
-    el("a-marken").replaceChildren(...rechte.map(recht => {
-        const marke = neu("li", abgelaufen(recht.bis) ? "abgelaufen" : "", recht.kurz);
-        marke.title = recht.name;
-        return marke;
-    }));
-    el("a-marken").hidden = rechte.length === 0;
-    el("rechte-karte").hidden = rechte.length === 0;
-    el("rechte-liste").replaceChildren(...rechte.map(recht => {
-        const zeile = neu("li", abgelaufen(recht.bis) ? "abgelaufen" : "");
-        zeile.append(neu("span", "", recht.name));
-        if (recht.bis) {
-            zeile.append(neu("span", "frist", `${abgelaufen(recht.bis) ? "abgelaufen am" : "bis"} ${datumDeutsch(recht.bis)}`));
-        }
-        return zeile;
-    }));
-
-    const feld = el<HTMLButtonElement>("a-strichcode");
-    const code = aktuellerStrichcode();
-    feld.replaceChildren();
-    feld.disabled = "fehler" in code;
-    el<HTMLButtonElement>("gross-oeffnen").disabled = "fehler" in code;
-    if ("fehler" in code) {
-        feld.append(neu("span", "fehler", code.fehler));
-    } else {
-        feld.append(strichcodeSvg(code.module), neu("span", "daten", strichcodeInhalt(ausweis)));
-    }
-    walletStand();
-}
-
-// ---- Strichcode groß -------------------------------------------------------
-
-interface Wachhalter { release(): Promise<void> }
-let wach: Wachhalter | undefined;
-
-function grossZeigen(): void {
-    const code = aktuellerStrichcode();
-    if ("fehler" in code) {
-        return;
-    }
-    const dialog = el<HTMLDialogElement>("gross");
-    el("gross-code").replaceChildren(strichcodeSvg(code.module));
-    el("gross-nummer").textContent = strichcodeInhalt(ausweis);
-    el("gross-name").textContent = vollerName(ausweis);
-    // Im Hochformat quer legen, wenn ein Modul sonst schmaler als zwei Pixel würde:
-    // So fein liest ein Scanner nicht mehr sicher vom Bildschirm.
-    const module = code.module.length + 2 * RUHEZONE;
-    dialog.classList.toggle("quer", window.innerWidth < window.innerHeight && window.innerWidth / module < 2);
-    dialog.showModal();
-    // Bildschirm anlassen, solange der Strichcode vor dem Terminal hängt.
-    const sperre = (navigator as Navigator & { wakeLock?: { request(art: "screen"): Promise<Wachhalter> } }).wakeLock;
-    sperre?.request("screen").then(halter => (wach = halter)).catch(() => undefined);
-}
-
-el("gross-oeffnen").addEventListener("click", grossZeigen);
-el("a-strichcode").addEventListener("click", grossZeigen);
-el("gross-schliessen").addEventListener("click", () => el<HTMLDialogElement>("gross").close());
-el("gross").addEventListener("close", () => {
-    wach?.release().catch(() => undefined);
-    wach = undefined;
-});
 
 // ---- Maske -----------------------------------------------------------------
 
@@ -361,6 +224,19 @@ function eigeneZeile(eintrag: Berechtigung): HTMLElement {
     return zeile;
 }
 
+function fotoElement(ziel: HTMLElement): void {
+    ziel.replaceChildren();
+    ziel.classList.toggle("ohne", foto === "");
+    if (foto) {
+        const bild = neu("img");
+        bild.src = foto;
+        bild.alt = "Passfoto";
+        ziel.append(bild);
+    } else {
+        ziel.append(neu("span", "", "kein Foto"));
+    }
+}
+
 /** Ausweis → Maske */
 function fuelleMaske(): void {
     for (const name of TEXTFELDER) {
@@ -414,11 +290,15 @@ function zeigeStrichcodeStand(): void {
     const zeile = el("strichcode-fehler");
     zeile.hidden = fehler === null;
     zeile.textContent = fehler ?? "";
-    el("strichcode-stand").textContent = `${ausweis.strichcodeArt === "code39" ? "Code 39" : "Code 128"}${inhalt ? `, „${inhalt}“` : ""}`;
-    // Ein Fehler darf nicht im zugeklappten Bereich verschwinden.
-    if (fehler !== null) {
-        el<HTMLDetailsElement>("strichcode-karte").open = true;
+    el("strichcode-stand").textContent = `(${ausweis.strichcodeArt === "code39" ? "Code 39" : "Code 128"})`;
+    const vorschau = el("strichcode-vorschau");
+    vorschau.replaceChildren();
+    if (inhalt === "") {
+        vorschau.append(neu("span", "leer", "Erscheint, sobald die Dienstausweisnummer eingetragen ist."));
+    } else if (fehler === null) {
+        vorschau.append(strichcodeSvg(strichcodeModule(ausweis.strichcodeArt, inhalt)), neu("span", "daten", inhalt));
     }
+    walletStand();
 }
 
 maske.addEventListener("input", uebernimm);
@@ -464,7 +344,7 @@ el("foto-entfernen").addEventListener("click", () => {
     kurzmeldung("Foto entfernt.", () => setzeFoto(davor));
 });
 
-// ---- Datensicherung --------------------------------------------------------
+// ---- Löschen ---------------------------------------------------------------
 
 function ladeHerunter(inhalt: Blob, name: string): void {
     const adresse = URL.createObjectURL(inhalt);
@@ -477,46 +357,9 @@ function ladeHerunter(inhalt: Blob, name: string): void {
     setTimeout(() => URL.revokeObjectURL(adresse), 60_000);
 }
 
-el("sicherung-speichern").addEventListener("click", () => {
-    if (leer()) {
-        kurzmeldung("Es gibt noch nichts zu sichern.");
-        return;
-    }
-    const inhalt = JSON.stringify({ format: "dienstausweis", version: 1, ausweis, foto }, null, 2);
-    ladeHerunter(new Blob([inhalt], { type: "application/json" }), "dienstausweis-sicherung.json");
-    kurzmeldung("Sicherungsdatei gespeichert. Sie enthält deine Ausweisdaten im Klartext.");
-});
-
-el<HTMLInputElement>("sicherung-datei").addEventListener("change", async ereignis => {
-    const eingabe = ereignis.target as HTMLInputElement;
-    const datei = eingabe.files?.[0];
-    eingabe.value = "";
-    if (!datei) {
-        return;
-    }
-    try {
-        const inhalt = JSON.parse(await datei.text()) as { format?: unknown; ausweis?: unknown; foto?: unknown };
-        if (inhalt.format !== "dienstausweis") {
-            throw new Error("keine Sicherung dieser App");
-        }
-        const davor = { ausweis, foto };
-        ausweis = bereinige(inhalt.ausweis);
-        foto = fotoGueltig(inhalt.foto) ? inhalt.foto : "";
-        sichere();
-        fuelleMaske();
-        kurzmeldung("Sicherung geladen. Der bisherige Ausweis wurde ersetzt.", () => {
-            ({ ausweis, foto } = davor);
-            sichere();
-            fuelleMaske();
-        });
-    } catch (fehler) {
-        kurzmeldung(`Die Datei ließ sich nicht laden: ${fehlertext(fehler)}`);
-    }
-});
-
 el("alles-loeschen").addEventListener("click", () => {
     if (leer()) {
-        kurzmeldung("Auf diesem Gerät liegt kein Ausweis.");
+        kurzmeldung("Auf diesem Gerät liegen keine Eingaben.");
         return;
     }
     const davor = { ausweis, foto };
@@ -524,7 +367,7 @@ el("alles-loeschen").addEventListener("click", () => {
     foto = "";
     sichere();
     fuelleMaske();
-    kurzmeldung("Ausweis von diesem Gerät gelöscht. Ein Pass in der Wallet bleibt dort, bis du ihn entfernst.", () => {
+    kurzmeldung("Eingaben gelöscht. Eine Karte in der Wallet bleibt dort, bis du sie entfernst.", () => {
         ({ ausweis, foto } = davor);
         sichere();
         fuelleMaske();
@@ -549,20 +392,25 @@ async function frageWallet(): Promise<void> {
 function walletStand(): void {
     const text = el("wallet-text");
     const bereit = Boolean(wallet && (wallet.apple || wallet.google));
+    const fehlt = fehlendeAngaben(ausweis);
+    const strichcode = strichcodeFehler(ausweis.strichcodeArt, strichcodeInhalt(ausweis));
+    const sperre = fehlt.length > 0 ? `Es fehlt noch: ${fehlt.join(", ")}.` : strichcode;
     el("wallet-knoepfe").hidden = !bereit;
     el("wallet-hinweis").hidden = !bereit;
     el("wallet-apple").hidden = !wallet?.apple;
     el("wallet-google").hidden = !wallet?.google;
+    // Die Knöpfe bleiben antippbar und sagen dann, was fehlt: Ein grauer Knopf erklärt nichts.
+    el("wallet-fehlt").hidden = true;
+    el("wallet-knoepfe").dataset["sperre"] = bereit && sperre ? sperre : "";
     if (wallet === undefined) {
-        text.textContent = "Prüfe, ob der Server Wallet-Pässe ausstellt …";
+        text.textContent = "Prüfe, ob der Server Karten ausstellt …";
     } else if (!bereit) {
         text.textContent = navigator.onLine
-            ? "Dieser Server stellt keine Wallet-Pässe aus. Der Ausweis hier in der App funktioniert trotzdem, auch ohne Netz."
-            : "Ohne Netz lässt sich kein Wallet-Pass ausstellen. Der Ausweis hier in der App funktioniert trotzdem.";
-    } else if (wallet?.apple && ausweis.strichcodeArt === "code39") {
-        text.textContent = "Der Pass trägt deine Angaben und den Strichcode. Apple Wallet zeichnet Code 39 nicht selbst: Der Strichcode liegt dort als Bild im Pass, das Foto entfällt.";
+            ? "Dieser Server stellt zurzeit keine Wallet-Karten aus."
+            : "Ohne Netz lässt sich keine Karte erstellen.";
     } else {
-        text.textContent = "Der Pass trägt deine Angaben und den Strichcode. Änderst du hier später etwas, stell den Pass neu aus und lösche den alten.";
+        const frist = abgelaufen(ausweis.gueltigBis) ? ` Achtung: Der Ausweis ist seit dem ${datumDeutsch(ausweis.gueltigBis)} abgelaufen.` : "";
+        text.textContent = `Ändert sich später etwas, etwa eine Berechtigung oder die Endnummer, erstell die Karte neu und lösche die alte.${frist}`;
     }
 }
 
@@ -578,14 +426,21 @@ async function hole(pfad: string, koerper: unknown): Promise<Response> {
 }
 
 async function mitKnopf(knopf: HTMLButtonElement, arbeit: () => Promise<void>): Promise<void> {
+    const sperre = el("wallet-knoepfe").dataset["sperre"];
+    if (sperre) {
+        const zeile = el("wallet-fehlt");
+        zeile.textContent = sperre;
+        zeile.hidden = false;
+        return;
+    }
     const beschriftung = knopf.textContent;
     knopf.disabled = true;
     knopf.classList.add("arbeitet");
-    knopf.textContent = "Pass wird ausgestellt …";
+    knopf.textContent = "Karte wird erstellt …";
     try {
         await arbeit();
     } catch (fehler) {
-        kurzmeldung(`Der Pass ließ sich nicht ausstellen: ${navigator.onLine ? fehlertext(fehler) : "keine Verbindung."}`, undefined, 12_000);
+        kurzmeldung(`Die Karte ließ sich nicht erstellen: ${navigator.onLine ? fehlertext(fehler) : "keine Verbindung."}`, undefined, 12_000);
     } finally {
         knopf.disabled = false;
         knopf.classList.remove("arbeitet");
@@ -594,8 +449,7 @@ async function mitKnopf(knopf: HTMLButtonElement, arbeit: () => Promise<void>): 
 }
 
 el<HTMLButtonElement>("wallet-apple").addEventListener("click", ereignis => mitKnopf(ereignis.currentTarget as HTMLButtonElement, async () => {
-    // Das Foto passt nur in den Pass mit eigenem Strichcode (Code 128), siehe server/apple.ts.
-    const bild = foto && ausweis.strichcodeArt === "code128" ? await fotoFuerPass(foto) : undefined;
+    const bild = foto ? await fotoFuerPass(foto) : undefined;
     const antwort = await hole("apple", { ausweis, foto: bild });
     const pass = new Blob([await antwort.arrayBuffer()], { type: "application/vnd.apple.pkpass" });
     ladeHerunter(pass, "dienstausweis.pkpass");
@@ -612,14 +466,16 @@ el<HTMLButtonElement>("wallet-google").addEventListener("click", ereignis => mit
 baueKatalog();
 fuelleMaske();
 sichere();
-zeige(fehlendeAngaben(ausweis).length === 0 || leer() ? "ausweis" : "daten");
 void frageWallet();
 window.addEventListener("online", () => void frageWallet());
 
 el("fassung").textContent = `Fassung ${__FASSUNG__}`;
 
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
-    navigator.serviceWorker.register("./sw.js").then(() => {
-        el("offline-stand").hidden = false;
-    }).catch(() => undefined);
+// Frühere Fassungen haben einen Dienst für den Start ohne Netz eingerichtet. Die
+// Seite ist keine App mehr; er wird abgemeldet, sein Speicher geleert.
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(liste => liste.forEach(dienst => void dienst.unregister())).catch(() => undefined);
+    if ("caches" in window) {
+        caches.keys().then(namen => namen.filter(name => name.startsWith("da-")).forEach(name => void caches.delete(name))).catch(() => undefined);
+    }
 }

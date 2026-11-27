@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { inflateSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { Bild, pngMasse, strichcodeBild, WEISS } from "../server/bild.js";
+import { Bild, pngLesen, pngMasse, strichcodeBild, WEISS } from "../server/bild.js";
 import { erzeugeDienst } from "../server/dienst.js";
 import { strichcodeModule } from "../src/strichcode.js";
 
@@ -112,6 +112,34 @@ describe("Bilder", () => {
         expect(punkte.indexOf("1")).toBeGreaterThanOrEqual(10 * modul);
     });
 
+    it("liest ein eigenes PNG wieder ein und setzt das Foto neben den Strichcode", () => {
+        const foto = new Bild(30, 40, [200, 100, 50]);
+        foto.rechteck(0, 0, 15, 40, [10, 20, 30]);
+        const gelesen = pngLesen(foto.png());
+        expect([...gelesen.pixel]).toEqual([...foto.pixel]);
+
+        const streifen = pngLesen(strichcodeBild("code39", "01234567-01", 750, 288, gelesen));
+        const punkt = (x: number, y: number): number[] => [...streifen.pixel.subarray((y * 750 + x) * 3, (y * 750 + x) * 3 + 3)];
+        // Foto 216 Pixel breit über die volle Höhe, rechts davon weiß bis zum ersten Strich.
+        expect(punkt(50, 144)).toEqual([10, 20, 30]);
+        expect(punkt(200, 280)).toEqual([200, 100, 50]);
+        expect(punkt(217, 144)).toEqual([255, 255, 255]);
+        let zeile = "";
+        for (let x = 216; x < 750; x++) {
+            zeile += punkt(x, 144)[0] === 0 ? "1" : "0";
+        }
+        const module = strichcodeModule("code39", "01234567-01");
+        expect(zeile.replace(/^0+|0+$/g, "")).toBe([...module].map(zeichen => zeichen.repeat(2)).join(""));
+        expect(zeile.indexOf("1")).toBeGreaterThanOrEqual(20);
+    });
+
+    it("weist PNG ab, die kein Browser so schreibt", () => {
+        const png = new Bild(4, 4, WEISS).png();
+        png[28] = 1; // Zeilensprung
+        expect(() => pngLesen(png)).toThrow();
+        expect(() => pngLesen(new Uint8Array(40))).toThrow();
+    });
+
     it("lehnt einen Strichcode ab, der nicht in das Bild passt", () => {
         expect(() => strichcodeBild("code39", "A".repeat(40), 375, 144)).toThrow();
     });
@@ -130,8 +158,9 @@ describe("Apple Wallet", () => {
     }
 
     it("liefert einen Pass, dessen Signatur OpenSSL gegen das Zertifikat bestätigt", async () => {
-        const foto = `data:image/png;base64,${new Bild(180, 240, WEISS).png().toString("base64")}`;
+        const foto = `data:image/png;base64,${new Bild(324, 432, WEISS).png().toString("base64")}`;
         const dateien = await pass(AUSWEIS, foto);
+        expect(pngMasse(dateien.get("thumbnail@2x.png") as Buffer)).toEqual({ breite: 180, hoehe: 240 });
         expect([...dateien.keys()].sort()).toEqual(
             ["icon.png", "icon@2x.png", "icon@3x.png", "manifest.json", "pass.json", "signature", "thumbnail@2x.png"]);
         writeFileSync(pfad("manifest.json"), dateien.get("manifest.json") as Buffer);
@@ -156,8 +185,12 @@ describe("Apple Wallet", () => {
     });
 
     it("legt Code 39 als Bild in den Pass, weil Wallet ihn nicht selbst zeichnet", async () => {
-        const dateien = await pass({ ...AUSWEIS, strichcodeArt: "code39" });
+        const foto = `data:image/png;base64,${new Bild(324, 432, [90, 90, 90]).png().toString("base64")}`;
+        const dateien = await pass({ ...AUSWEIS, strichcodeArt: "code39" }, foto);
+        // Das Foto steht links im Streifen.
+        expect([...pngLesen(dateien.get("strip@3x.png") as Buffer).pixel.subarray(0, 3)]).toEqual([90, 90, 90]);
         expect(dateien.has("strip@2x.png")).toBe(true);
+        expect(dateien.has("strip@3x.png")).toBe(true);
         expect(dateien.has("thumbnail@2x.png")).toBe(false);
         const json = JSON.parse((dateien.get("pass.json") as Buffer).toString());
         expect(json.barcodes).toBeUndefined();
@@ -170,7 +203,7 @@ describe("Apple Wallet", () => {
         expect((await sende(`${adresse}/wallet/apple`, { ausweis: AUSWEIS, foto: "data:image/png;base64,AAAA" })).status).toBe(400);
         const gross = `data:image/png;base64,${new Bild(400, 400, WEISS).png().toString("base64")}`;
         expect((await sende(`${adresse}/wallet/apple`, { ausweis: AUSWEIS, foto: gross })).status).toBe(400);
-        const riesig = await sende(`${adresse}/wallet/apple`, { ausweis: AUSWEIS, x: "x".repeat(500_000) }).then(a => a.status, () => 413);
+        const riesig = await sende(`${adresse}/wallet/apple`, { ausweis: AUSWEIS, x: "x".repeat(1_000_000) }).then(a => a.status, () => 413);
         expect(riesig).toBe(413);
         const antwort = await fetch(`${adresse}/wallet/apple`, { method: "POST", body: "x" });
         expect(antwort.status).toBe(415);

@@ -25,8 +25,8 @@ export interface DienstEinstellung {
     grenze: number;
 }
 
-const MAX_ANFRAGE = 400_000;
-const MAX_FOTO = 250_000;
+const MAX_ANFRAGE = 900_000;
+const MAX_FOTO = 600_000;
 const FENSTER_MS = 10 * 60_000;
 
 const ARTEN: Record<string, string> = {
@@ -78,7 +78,7 @@ function foto(roh: unknown): Buffer | null {
     }
     const daten = Buffer.from(roh.slice(vorsatz.length), "base64");
     const masse = pngMasse(daten);
-    if (daten.length > MAX_FOTO || masse === null || masse.breite > 180 || masse.hoehe > 240) {
+    if (daten.length > MAX_FOTO || masse === null || masse.breite > 324 || masse.hoehe > 432) {
         throw new Abweisung(400, "Das Foto ist zu groß oder kein PNG.");
     }
     return daten;
@@ -183,7 +183,14 @@ export function erzeugeDienst(einstellung: DienstEinstellung): Server {
             }
             bremse(anfrage);
             const { ausweis, bild } = await ausweisAus(anfrage);
-            const pass = applePass(ausweis, bild, einstellung.apple);
+            let pass: Buffer;
+            try {
+                pass = applePass(ausweis, bild, einstellung.apple);
+            } catch (fehler) {
+                // Unlesbares Foto oder zu langer Strichcode: Das liegt an der Anfrage, nicht am Dienst.
+                const eigener = fehler instanceof Error && /PNG|Strichcode/.test(fehler.message);
+                throw eigener ? new Abweisung(400, (fehler as Error).message) : fehler;
+            }
             antwort.writeHead(200, {
                 "Content-Type": "application/vnd.apple.pkpass",
                 "Content-Disposition": 'attachment; filename="dienstausweis.pkpass"',

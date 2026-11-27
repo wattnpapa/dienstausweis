@@ -1,11 +1,9 @@
 // Passfoto: im Browser auf 3:4 zuschneiden und verkleinern. Das Original
 // verlässt das Gerät nie, gespeichert wird nur der kleine Zuschnitt.
 
-const BREITE = 300;
-const HOEHE = 400;
-/** Größe des Vorschaubilds im Apple-Pass (thumbnail@2x). */
-const PASS_BREITE = 180;
-const PASS_HOEHE = 240;
+// 324 × 432: so groß steht das Foto in der höchsten Auflösung auf der Apple-Karte.
+const BREITE = 324;
+const HOEHE = 432;
 
 function zeichne(quelle: CanvasImageSource, quellBreite: number, quellHoehe: number, breite: number, hoehe: number): HTMLCanvasElement {
     const flaeche = document.createElement("canvas");
@@ -36,7 +34,7 @@ function lade(adresse: string): Promise<HTMLImageElement> {
     });
 }
 
-/** Gewählte Datei → JPEG-Daten-URL, 300 × 400. */
+/** Gewählte Datei → JPEG-Daten-URL, 324 × 432. */
 export async function fotoAusDatei(datei: File): Promise<string> {
     const adresse = URL.createObjectURL(datei);
     try {
@@ -47,13 +45,13 @@ export async function fotoAusDatei(datei: File): Promise<string> {
     }
 }
 
-/** Gespeichertes Foto → PNG-Daten-URL in der Größe, die der Apple-Pass erwartet. */
+/** Gespeichertes Foto → PNG-Daten-URL; der Dienst liest nur PNG. */
 export async function fotoFuerPass(foto: string): Promise<string> {
     const bild = await lade(foto);
-    return zeichne(bild, bild.naturalWidth, bild.naturalHeight, PASS_BREITE, PASS_HOEHE).toDataURL("image/png");
+    return zeichne(bild, bild.naturalWidth, bild.naturalHeight, BREITE, HOEHE).toDataURL("image/png");
 }
 
-/** Prüft ein Foto aus einer Sicherungsdatei. */
+/** Prüft ein Foto aus dem Speicher des Browsers. */
 export function fotoGueltig(wert: unknown): wert is string {
     return typeof wert === "string" && wert.startsWith("data:image/jpeg;base64,") && wert.length < 400_000;
 }
