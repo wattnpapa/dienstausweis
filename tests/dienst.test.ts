@@ -198,11 +198,11 @@ describe("Apple Wallet", () => {
         const json = JSON.parse((dateien.get("pass.json") as Buffer).toString());
         expect(json.barcodes).toBeUndefined();
         expect(json.storeCard.secondaryFields[0].value).toBe("Erika Mustermann");
-        // Wallet zeigt unter dem Streifen nur vier Felder; die Berechtigungen müssen dabei sein.
+        // Wallet setzt alle Felder unter dem Streifen in eine Zeile; vorne nur Name und Gültigkeit.
         const vorne = [...json.storeCard.secondaryFields, ...json.storeCard.auxiliaryFields];
-        expect(vorne.length).toBeLessThanOrEqual(4);
-        expect(vorne.map((feld: { key: string }) => feld.key)).toContain("kurz");
-        expect(json.storeCard.backFields.map((feld: { key: string }) => feld.key)).toContain("geburtsdatum-rueck");
+        expect(vorne.map((feld: { key: string }) => feld.key)).toEqual(["name", "gueltig"]);
+        const hinten = json.storeCard.backFields.map((feld: { key: string }) => feld.key);
+        expect(hinten).toEqual(expect.arrayContaining(["dienststelle-rueck", "geburtsdatum-rueck", "berechtigungen"]));
     });
 
     it("weist unvollständige Ausweise, fremde Bilder und zu große Anfragen ab", async () => {

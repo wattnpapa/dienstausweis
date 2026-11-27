@@ -37,9 +37,6 @@ export interface Marke {
 export const HINWEIS = "Digitale Kopie zur eigenen Verwendung, vom Inhaber selbst erstellt. "
     + "Kein amtliches Dokument und kein Ersatz für den Dienstausweis.";
 
-/** Mehr Felder (sekundär und zusätzlich zusammen) zeigt Wallet auf einer storeCard nicht an. */
-export const STORECARD_FELDER = 4;
-
 interface Feld {
     key: string;
     label: string;
@@ -69,18 +66,14 @@ export function passJson(ausweis: Ausweis, einstellung: AppleEinstellung, serien
     // Code 128: Passart „generic“ (Name groß, Foto rechts, Strichcode von Wallet).
     // Code 39: „storeCard“, weil nur dort ein Streifenbild erlaubt ist; darin
     // stehen Foto und Strichcode. Primäre Felder lägen über dem Bild, deshalb
-    // steht der Name darunter. Die storeCard zeigt unter dem Bild höchstens
-    // vier Felder und verwirft weitere stillschweigend; was nicht passt, steht
-    // auf der Rückseite. Die Berechtigungen gehen dem Geburtsdatum vor.
-    const zeile = [...name, ...dienststelle, ...gueltig, ...kurzzeile, ...geburtsdatum];
+    // steht der Name darunter. Die storeCard setzt alle Felder unter dem Bild
+    // in eine Zeile und kürzt sie, bis nichts mehr lesbar ist. Vorne stehen
+    // deshalb nur Name und Gültigkeit, alles andere auf der Rückseite.
+    const gueltigRechts = gueltig.map(feld => ({ ...feld, textAlignment: "PKTextAlignmentRight" }));
+    const rueckZusatz = [...dienststelle, ...geburtsdatum].map(feld => ({ ...feld, key: `${feld.key}-rueck` }));
     const aufbau = nativ
         ? { headerFields: kopf, primaryFields: name, secondaryFields: dienststelle, auxiliaryFields: [...geburtsdatum, ...gueltig, ...kurzzeile], backFields: rueckseite }
-        : {
-            headerFields: kopf,
-            secondaryFields: zeile.slice(0, 2),
-            auxiliaryFields: zeile.slice(2, STORECARD_FELDER),
-            backFields: [...zeile.slice(STORECARD_FELDER).map(feld => ({ ...feld, key: `${feld.key}-rueck` })), ...rueckseite]
-        };
+        : { headerFields: kopf, secondaryFields: name, auxiliaryFields: gueltigRechts, backFields: [...rueckZusatz, ...rueckseite] };
     return {
         formatVersion: 1,
         passTypeIdentifier: einstellung.passTyp,
