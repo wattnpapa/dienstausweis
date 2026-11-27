@@ -29,7 +29,7 @@ export interface Ausweis {
 
 export const LEER: Ausweis = {
     nummer: "", vorname: "", nachname: "", dienststelle: "", geburtsdatum: "", gueltigBis: "",
-    strichcodeArt: "code39", strichcodeInhalt: "", berechtigungen: []
+    strichcodeArt: "code128", strichcodeInhalt: "", berechtigungen: []
 };
 
 export const MAX_BERECHTIGUNGEN = 40;
@@ -86,7 +86,7 @@ export function bereinige(roh: unknown): Ausweis {
         dienststelle: text(quelle["dienststelle"], 80),
         geburtsdatum: datum(quelle["geburtsdatum"]),
         gueltigBis: datum(quelle["gueltigBis"]),
-        strichcodeArt: STRICHCODE_ARTEN.includes(art as StrichcodeArt) ? art as StrichcodeArt : "code39",
+        strichcodeArt: STRICHCODE_ARTEN.includes(art as StrichcodeArt) ? art as StrichcodeArt : "code128",
         strichcodeInhalt: text(quelle["strichcodeInhalt"], 40),
         berechtigungen
     };

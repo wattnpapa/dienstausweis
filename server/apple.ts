@@ -63,14 +63,16 @@ export function passJson(ausweis: Ausweis, einstellung: AppleEinstellung, serien
         ["hinweis", "Hinweis", HINWEIS]
     );
     const kurzzeile = felder(["kurz", "Berechtigungen", kurz]);
-    // Code 128: Passart „generic“ (Name groß, Foto rechts, Strichcode von Wallet).
+    // Code 128 (Vorgabe): Passart „generic“, Name groß, Foto rechts, darunter
+    // Dienststelle und Daten, dann die Berechtigungen allein in einer Zeile;
+    // den Strichcode zeichnet Wallet unten selbst.
     // Code 39: „eventTicket“, weil Wallet ihn nicht selbst zeichnet und nur
     // Eintrittskarten und Kundenkarten ein Streifenbild für Foto und Strichcode
     // erlauben. Die Kundenkarte setzt alle Felder in eine einzige Zeile; die
     // Eintrittskarte hat zwei, die zweite gehört den Berechtigungen. Primäre
     // Felder lägen über dem Bild und bleiben leer.
     const aufbau = nativ
-        ? { headerFields: kopf, primaryFields: name, secondaryFields: dienststelle, auxiliaryFields: [...geburtsdatum, ...gueltig, ...kurzzeile], backFields: rueckseite }
+        ? { headerFields: kopf, primaryFields: name, secondaryFields: [...dienststelle, ...geburtsdatum, ...gueltig], auxiliaryFields: kurzzeile, backFields: rueckseite }
         : { headerFields: kopf, secondaryFields: [...name, ...dienststelle, ...geburtsdatum, ...gueltig], auxiliaryFields: kurzzeile, backFields: rueckseite };
     return {
         formatVersion: 1,

@@ -27,11 +27,12 @@ auf die Platte, der Container läuft mit schreibgeschütztem Dateisystem.
 
 ## Strichcode
 
-Die Karten tragen Code 39 mit der vollen Nummer samt Bindestrich und laufender
+Die Karten tragen Code 128 mit der vollen Nummer samt Bindestrich und laufender
 Endnummer, etwa `01234567-01`. Das ist die Vorgabe. Unter „Strichcode anpassen“
-lassen sich Art (Code 39 oder Code 128) und ein abweichender Inhalt setzen.
+lassen sich Art (Code 128 oder Code 39) und ein abweichender Inhalt setzen.
 
-Apple Wallet zeichnet von den eindimensionalen Codes nur Code 128 selbst. Bei
+Apple Wallet zeichnet von den eindimensionalen Codes nur Code 128 selbst, groß
+unten auf der Karte (Passart `generic`, Foto rechts neben dem Namen). Bei
 Code 39 legt der Dienst deshalb ein Streifenbild in die Karte (Passart
 `eventTicket`, Streifen 375 × 98 Punkt): links das Foto, daneben der
 Strichcode. Darunter stehen zwei Zeilen: Name, Dienststelle, Geburtsdatum und

@@ -8,7 +8,7 @@ describe("bereinige", () => {
             const ausweis = bereinige(roh);
             expect(ausweis.nummer).toBe("");
             expect(ausweis.berechtigungen).toEqual([]);
-            expect(ausweis.strichcodeArt).toBe("code39");
+            expect(ausweis.strichcodeArt).toBe("code128");
         }
     });
 
@@ -22,7 +22,7 @@ describe("bereinige", () => {
         expect(ausweis.nachname).toHaveLength(60);
         expect(ausweis.geburtsdatum).toBe("");
         expect(ausweis.gueltigBis).toBe("2030-12-31");
-        expect(ausweis.strichcodeArt).toBe("code39");
+        expect(ausweis.strichcodeArt).toBe("code128");
     });
 
     it("behält bekannte, unbekannte und eigene Berechtigungen, aber keine doppelten", () => {

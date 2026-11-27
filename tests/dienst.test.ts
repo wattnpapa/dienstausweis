@@ -183,6 +183,9 @@ describe("Apple Wallet", () => {
         expect(json.passTypeIdentifier).toBe("pass.test");
         expect(json.barcodes[0]).toMatchObject({ format: "PKBarcodeFormatCode128", message: "12345678" });
         expect(json.generic.primaryFields[0].value).toBe("Erika Mustermann");
+        const schluessel = (liste: Array<{ key: string }>) => liste.map(feld => feld.key);
+        expect(schluessel(json.generic.secondaryFields)).toEqual(["dienststelle", "geburtsdatum", "gueltig"]);
+        expect(json.generic.auxiliaryFields).toEqual([{ key: "kurz", label: "Berechtigungen", value: "CE · AGT" }]);
         expect(json.generic.backFields[0].value).toBe("Klasse CE (bis 01.01.2029)\nAtemschutzgeräteträger");
         expect(json.expirationDate).toBe("2031-06-30T23:59:59+01:00");
     });

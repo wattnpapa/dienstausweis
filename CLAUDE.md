@@ -28,9 +28,10 @@ npm start            # Dienst starten (Einstellungen aus der Umgebung, .env.beis
   Browser wie im Dienst.
 - `src/` ist gemeinsam für Seite und Dienst und hängt von nichts ab. `src/strichcode.ts`
   rechnet Module, die Seite zeichnet daraus SVG, der Dienst PNG (`server/bild.ts`).
-- Der Strichcode der Karten ist Code 39 mit der vollen Nummer samt Bindestrich
-  und laufender Endnummer (`01234567-01`). Apple Wallet zeichnet Code 39 nicht
-  selbst: Foto und Strichcode stehen dort gemeinsam im Streifenbild.
+- Der Strichcode der Karten ist Code 128 mit der vollen Nummer samt Bindestrich
+  und laufender Endnummer (`01234567-01`); Wallet zeichnet ihn selbst. Code 39
+  bleibt wählbar. Den zeichnet Apple Wallet nicht: Foto und Strichcode stehen
+  dann gemeinsam im Streifenbild einer Eintrittskarte.
 - Neue Berechtigungen kommen in `src/berechtigungen.ts`. Eine vergebene `id`
   ändert sich nie mehr, sonst verlieren gespeicherte Ausweise den Eintrag.
 - Der Strichcode steht in jedem Anzeigemodus schwarz auf weiß.
