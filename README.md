@@ -78,7 +78,8 @@ bash /opt/dienstausweis/deploy/plesk/deploy.sh
 
 Danach in Plesk die Domain anlegen, Let's Encrypt einschalten und den Inhalt von
 `deploy/plesk/nginx-direktiven.conf` unter „Additional nginx directives“
-eintragen. Der Workflow `deploy-plesk.yml` aktualisiert den Server bei jedem Push
+eintragen. Ist nginx in Plesk aus (wie auf srv01), stattdessen
+`deploy/plesk/apache-direktiven.conf` unter „Additional directives for HTTPS“. Der Workflow `deploy-plesk.yml` aktualisiert den Server bei jedem Push
 auf `main`, sobald die Secrets `PLESK_HOST`, `PLESK_USER`, `PLESK_SSH_KEY`,
 `PLESK_KNOWN_HOSTS` gesetzt sind und die Repository-Variable `PLESK_DEPLOY` auf
 `an` steht.
