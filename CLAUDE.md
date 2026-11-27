@@ -34,8 +34,12 @@ npm start            # Dienst starten (Einstellungen aus der Umgebung, .env.beis
 - Neue Berechtigungen kommen in `src/berechtigungen.ts`. Eine vergebene `id`
   ändert sich nie mehr, sonst verlieren gespeicherte Ausweise den Eintrag.
 - Der Strichcode steht in jedem Anzeigemodus schwarz auf weiß.
-- Kein THW-Zeichen im Repository. Die Karte heißt überall selbst erstellte
-  Kopie und nie amtlich.
+- Kein THW-Zeichen im Repository. Logo (`logo.png`, weiß) und Emblem
+  (`emblem.png`, blau) liegen in `marke/` (in .gitignore) und kommen über
+  `DA_MARKE` zur Laufzeit in den Dienst, wie die Schlüssel. Ohne sie gibt es
+  Karten ohne Logo. Die Karte heißt überall selbst erstellte Kopie und nie amtlich.
+- Kennfarbe der Karten ist RAL 5002 Ultramarinblau, digital `#00387b`
+  (`KENNFARBE` in `server/bild.ts`).
 - Schlüssel und Zertifikate liegen in `geheim/` (in .gitignore), nie im Bild
   und nie im Repository.
 - `node-forge` ist die einzige Laufzeit-Abhängigkeit (PKCS#7 für Apple). ZIP und

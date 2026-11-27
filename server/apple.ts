@@ -3,7 +3,7 @@ import forge from "node-forge";
 import {
     berechtigungenAnzeige, berechtigungenText, datumDeutsch, strichcodeInhalt, vollerName, type Ausweis
 } from "../src/daten.js";
-import { pngLesen, skaliert, strichcodeBild, symbol } from "./bild.js";
+import { KENNFARBE, logoBild, pngLesen, skaliert, strichcodeBild, symbol } from "./bild.js";
 import { zip } from "./zip.js";
 
 // Apple-Wallet-Pass (.pkpass): pass.json und Bilder, eine Liste ihrer
@@ -23,10 +23,22 @@ export interface AppleEinstellung {
     schluesselPasswort?: string;
     /** Apple Worldwide Developer Relations (G4), PEM */
     wwdr: string;
+    /** Logo und Emblem als PNG, sonst ein neutrales Symbol und nur Text. */
+    marke?: Marke;
+}
+
+export interface Marke {
+    /** Logo weiß auf durchsichtigem Grund */
+    logo: Uint8Array;
+    /** Emblem blau auf durchsichtigem Grund */
+    emblem: Uint8Array;
 }
 
 export const HINWEIS = "Digitale Kopie zur eigenen Verwendung, vom Inhaber selbst erstellt. "
     + "Kein amtliches Dokument und kein Ersatz für den Dienstausweis.";
+
+/** Mehr Felder (sekundär und zusätzlich zusammen) zeigt Wallet auf einer storeCard nicht an. */
+export const STORECARD_FELDER = 4;
 
 interface Feld {
     key: string;
@@ -45,10 +57,8 @@ export function passJson(ausweis: Ausweis, einstellung: AppleEinstellung, serien
     const kurz = berechtigungenAnzeige(ausweis).map(eintrag => eintrag.kurz).join(" · ");
     const name = felder(["name", "Name", vollerName(ausweis)]);
     const dienststelle = felder(["dienststelle", "Dienststelle", ausweis.dienststelle]);
-    const angaben = felder(
-        ["geburtsdatum", "Geburtsdatum", datumDeutsch(ausweis.geburtsdatum)],
-        ["gueltig", "Gültig bis", datumDeutsch(ausweis.gueltigBis)]
-    );
+    const geburtsdatum = felder(["geburtsdatum", "Geburtsdatum", datumDeutsch(ausweis.geburtsdatum)]);
+    const gueltig = felder(["gueltig", "Gültig bis", datumDeutsch(ausweis.gueltigBis)]);
     const kopf = felder(["nummer", "Ausweis-Nr.", ausweis.nummer]);
     const rueckseite = felder(
         ["berechtigungen", "Berechtigungen", berechtigungenText(ausweis)],
@@ -59,10 +69,18 @@ export function passJson(ausweis: Ausweis, einstellung: AppleEinstellung, serien
     // Code 128: Passart „generic“ (Name groß, Foto rechts, Strichcode von Wallet).
     // Code 39: „storeCard“, weil nur dort ein Streifenbild erlaubt ist; darin
     // stehen Foto und Strichcode. Primäre Felder lägen über dem Bild, deshalb
-    // steht der Name darunter.
+    // steht der Name darunter. Die storeCard zeigt unter dem Bild höchstens
+    // vier Felder und verwirft weitere stillschweigend; was nicht passt, steht
+    // auf der Rückseite. Die Berechtigungen gehen dem Geburtsdatum vor.
+    const zeile = [...name, ...dienststelle, ...gueltig, ...kurzzeile, ...geburtsdatum];
     const aufbau = nativ
-        ? { headerFields: kopf, primaryFields: name, secondaryFields: dienststelle, auxiliaryFields: [...angaben, ...kurzzeile], backFields: rueckseite }
-        : { headerFields: kopf, secondaryFields: [...name, ...dienststelle], auxiliaryFields: [...angaben, ...kurzzeile], backFields: rueckseite };
+        ? { headerFields: kopf, primaryFields: name, secondaryFields: dienststelle, auxiliaryFields: [...geburtsdatum, ...gueltig, ...kurzzeile], backFields: rueckseite }
+        : {
+            headerFields: kopf,
+            secondaryFields: zeile.slice(0, 2),
+            auxiliaryFields: zeile.slice(2, STORECARD_FELDER),
+            backFields: [...zeile.slice(STORECARD_FELDER).map(feld => ({ ...feld, key: `${feld.key}-rueck` })), ...rueckseite]
+        };
     return {
         formatVersion: 1,
         passTypeIdentifier: einstellung.passTyp,
@@ -70,8 +88,9 @@ export function passJson(ausweis: Ausweis, einstellung: AppleEinstellung, serien
         organizationName: einstellung.organisation,
         serialNumber: seriennummer,
         description: "THW-Ausweis (digitale Kopie)",
-        logoText: "THW-Ausweis",
-        backgroundColor: "rgb(18, 39, 94)",
+        // Neben dem Logo ist für Text kein Platz mehr.
+        ...(einstellung.marke ? {} : { logoText: "THW-Ausweis" }),
+        backgroundColor: `rgb(${KENNFARBE.join(", ")})`,
         foregroundColor: "rgb(255, 255, 255)",
         labelColor: "rgb(203, 207, 220)",
         sharingProhibited: true,
@@ -124,9 +143,15 @@ export function applePass(ausweis: Ausweis, foto: Uint8Array | null, einstellung
     const dateien = new Map<string, Uint8Array>();
     const pass = passJson(ausweis, einstellung, randomUUID());
     dateien.set("pass.json", Buffer.from(JSON.stringify(pass), "utf8"));
-    dateien.set("icon.png", symbol(29));
-    dateien.set("icon@2x.png", symbol(58));
-    dateien.set("icon@3x.png", symbol(87));
+    const emblem = einstellung.marke ? pngLesen(einstellung.marke.emblem) : null;
+    dateien.set("icon.png", symbol(29, emblem));
+    dateien.set("icon@2x.png", symbol(58, emblem));
+    dateien.set("icon@3x.png", symbol(87, emblem));
+    if (einstellung.marke) {
+        const logo = pngLesen(einstellung.marke.logo, KENNFARBE);
+        dateien.set("logo@2x.png", logoBild(logo, 100));
+        dateien.set("logo@3x.png", logoBild(logo, 150));
+    }
     if (nativ) {
         if (bild !== null) {
             dateien.set("thumbnail@2x.png", skaliert(bild, 180, 240).png());

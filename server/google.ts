@@ -16,6 +16,8 @@ export interface GoogleEinstellung {
     schluessel: string;
     /** Adressen, von denen der Speichern-Link aufgerufen wird, z. B. https://dienstausweis.app */
     urspruenge: string[];
+    /** Öffentliche Adresse des Emblems (PNG), das Google Wallet als Logo zeigt */
+    logo?: string;
 }
 
 function sprachtext(wert: string): { defaultValue: { language: string; value: string } } {
@@ -38,7 +40,9 @@ export function googleObjekt(ausweis: Ausweis, einstellung: GoogleEinstellung, k
         id: `${einstellung.aussteller}.${kennung}`,
         classId: `${einstellung.aussteller}.${einstellung.klasse}`,
         state: "ACTIVE",
-        hexBackgroundColor: "#12275e",
+        // RAL 5002 Ultramarinblau
+        hexBackgroundColor: "#00387b",
+        ...(einstellung.logo ? { logo: { sourceUri: { uri: einstellung.logo }, contentDescription: sprachtext("THW") } } : {}),
         cardTitle: sprachtext("THW-Ausweis"),
         header: sprachtext(vollerName(ausweis) || ausweis.nummer),
         ...(ausweis.dienststelle ? { subheader: sprachtext(ausweis.dienststelle) } : {}),

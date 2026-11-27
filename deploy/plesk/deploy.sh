@@ -57,6 +57,9 @@ mkdir -p geheim
 chown -R root:1000 geheim
 chmod 750 geheim
 find geheim -type f -exec chmod 640 {} +
+# Logo und Emblem (optional, DA_MARKE): ebenfalls nur lesbar.
+mkdir -p marke
+find marke -type f -exec chmod 644 {} +
 PORT="${DA_PLESK_PORT:-8086}"
 
 # 3. Bauen und starten

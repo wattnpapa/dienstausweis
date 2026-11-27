@@ -17,8 +17,8 @@
   --linie:       #bcc3d3;
   --linie-stark: #7a8398;
 
-  --akzent:      #12275e;
-  --akzent-hell: #1d3d8f;
+  --akzent:      #00387b;
+  --akzent-hell: #1f5bb0;
   --auf-akzent:  #ffffff;
 
   --gut:         #146b3a;
@@ -559,7 +559,7 @@ footer.seite {
   --warn-text:   #f0cf88;
   --warn-fond:   #2a2416;
   --warn-linie:  #6b5a2c;
-  --kopf-fond:   #12275e;
+  --kopf-fond:   #00387b;
   --kopf-auf:    #ffffff;
   --kopf-kante-farbe: rgba(0, 0, 0, 0.5);
   --vorschau-fond: #2a2d33;

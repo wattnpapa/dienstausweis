@@ -23,6 +23,8 @@ export interface DienstEinstellung {
     urspruenge: string[];
     /** Pässe je Absender in zehn Minuten. */
     grenze: number;
+    /** Emblem als fertiges PNG unter /marke/emblem.png; Google Wallet lädt es von dort. */
+    emblem?: Buffer;
 }
 
 const MAX_ANFRAGE = 900_000;
@@ -175,6 +177,9 @@ export function erzeugeDienst(einstellung: DienstEinstellung): Server {
         }
         if (pfad === "/gesundheit") {
             json(antwort, 200, { ok: true });
+        } else if (pfad === "/marke/emblem.png" && einstellung.emblem && (anfrage.method === "GET" || anfrage.method === "HEAD")) {
+            antwort.writeHead(200, { "Content-Type": "image/png", "Content-Length": einstellung.emblem.length, "Cache-Control": "public, max-age=86400" });
+            antwort.end(anfrage.method === "HEAD" ? undefined : einstellung.emblem);
         } else if (pfad === "/wallet/stand" && anfrage.method === "GET") {
             json(antwort, 200, { apple: Boolean(einstellung.apple), google: Boolean(einstellung.google) });
         } else if (pfad === "/wallet/apple" && anfrage.method === "POST") {

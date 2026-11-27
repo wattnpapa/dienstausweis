@@ -76,6 +76,12 @@ bash /opt/dienstausweis/deploy/plesk/deploy.sh   # legt .env an und hält an
 bash /opt/dienstausweis/deploy/plesk/deploy.sh
 ```
 
+Logo und Emblem liegen nicht im Repository. Für Karten mit Logo aus dem
+CD-Paket des THW (`Digital_RGB/PNG_Raster`, 1000 px) das weiße Logo als
+`marke/logo.png` und das blaue Emblem als `marke/emblem.png` ablegen und
+`DA_MARKE=/marke` in `.env` setzen. Apple Wallet zeigt dann das Logo oben links
+und das Emblem als Symbol, Google Wallet das Emblem (von `/marke/emblem.png`).
+
 Danach in Plesk die Domain anlegen, Let's Encrypt einschalten und den Inhalt von
 `deploy/plesk/nginx-direktiven.conf` unter „Additional nginx directives“
 eintragen. Ist nginx in Plesk aus (wie auf srv01), stattdessen

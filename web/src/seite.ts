@@ -46,7 +46,7 @@ function setzeModus(modus: Modus): void {
     for (const knopf of document.querySelectorAll<HTMLButtonElement>(".anzeige-schalter button")) {
         knopf.setAttribute("aria-pressed", String(knopf.dataset["modus"] === modus));
     }
-    const farbe = modus === "nacht" ? "#221f16" : modus === "dunkel" ? "#0f1116" : "#12275e";
+    const farbe = modus === "nacht" ? "#221f16" : modus === "dunkel" ? "#0f1116" : "#00387b";
     document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute("content", farbe);
     erklaeren(modus);
     // Am Telefon steht die Erklärung erst nach einer Wahl: Beim ersten Besuch schiebt sie sonst die Maske unter den Bildschirm.

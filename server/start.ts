@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { AppleEinstellung } from "./apple.js";
+import type { AppleEinstellung, Marke } from "./apple.js";
+import { pngLesen, symbol } from "./bild.js";
 import { erzeugeDienst } from "./dienst.js";
 import type { GoogleEinstellung } from "./google.js";
 
@@ -22,6 +23,26 @@ function datei(name: string): string {
     return readFileSync(pfad, "utf8");
 }
 
+/**
+ * Logo und Emblem aus DA_MARKE (logo.png weiß, emblem.png blau, beide mit
+ * durchsichtigem Grund). Sie liegen wie die Schlüssel nicht im Repository.
+ */
+function marke(): Marke | undefined {
+    const ordner = wert("DA_MARKE");
+    if (!ordner) {
+        return undefined;
+    }
+    const pfade = { logo: join(ordner, "logo.png"), emblem: join(ordner, "emblem.png") };
+    for (const pfad of Object.values(pfade)) {
+        if (!existsSync(pfad)) {
+            throw new Error(`DA_MARKE: Datei „${pfad}“ fehlt.`);
+        }
+    }
+    return { logo: readFileSync(pfade.logo), emblem: readFileSync(pfade.emblem) };
+}
+
+const markeEinstellung = marke();
+
 function apple(): AppleEinstellung | undefined {
     if (!wert("DA_APPLE_PASS_TYP")) {
         return undefined;
@@ -39,6 +60,7 @@ function apple(): AppleEinstellung | undefined {
         zertifikat: datei("DA_APPLE_ZERTIFIKAT"),
         schluessel: datei("DA_APPLE_SCHLUESSEL"),
         wwdr: datei("DA_APPLE_WWDR"),
+        ...(markeEinstellung ? { marke: markeEinstellung } : {}),
         ...(passwort ? { schluesselPasswort: passwort } : {})
     };
 }
@@ -59,7 +81,8 @@ function google(): GoogleEinstellung | undefined {
         klasse: wert("DA_GOOGLE_KLASSE") || "dienstausweis",
         konto: konto.client_email,
         schluessel: konto.private_key,
-        urspruenge: [wert("DA_ADRESSE"), ...liste("DA_URSPRUENGE")]
+        urspruenge: [wert("DA_ADRESSE"), ...liste("DA_URSPRUENGE")],
+        ...(markeEinstellung ? { logo: `${wert("DA_ADRESSE")}/marke/emblem.png` } : {})
     };
 }
 
@@ -78,9 +101,10 @@ erzeugeDienst({
     hinterProxy: wert("DA_HINTER_PROXY") === "1",
     urspruenge: liste("DA_URSPRUENGE"),
     grenze: Number(wert("DA_GRENZE") || 20),
+    ...(markeEinstellung ? { emblem: symbol(660, pngLesen(markeEinstellung.emblem)) } : {}),
     ...(appleEinstellung ? { apple: appleEinstellung } : {}),
     ...(googleEinstellung ? { google: googleEinstellung } : {})
 }).listen(port, host, () => {
     console.log(`Dienstausweis lauscht auf ${host}:${port}`);
-    console.log(`Apple Wallet: ${appleEinstellung ? "an" : "aus"}, Google Wallet: ${googleEinstellung ? "an" : "aus"}`);
+    console.log(`Apple Wallet: ${appleEinstellung ? "an" : "aus"}, Google Wallet: ${googleEinstellung ? "an" : "aus"}, Logo: ${markeEinstellung ? "an" : "aus"}`);
 });

@@ -6,8 +6,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { inflateSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { Bild, pngLesen, pngMasse, strichcodeBild, WEISS } from "../server/bild.js";
+import { applePass, passJson } from "../server/apple.js";
+import { Bild, KENNFARBE, pngLesen, pngMasse, strichcodeBild, symbol, WEISS, zugeschnitten } from "../server/bild.js";
 import { erzeugeDienst } from "../server/dienst.js";
+import { googleObjekt } from "../server/google.js";
+import { bereinige } from "../src/daten.js";
 import { strichcodeModule } from "../src/strichcode.js";
 
 // Der Dienst gegen ein selbst ausgestelltes Prüfzertifikat. Ob Apple und Google
@@ -195,6 +198,11 @@ describe("Apple Wallet", () => {
         const json = JSON.parse((dateien.get("pass.json") as Buffer).toString());
         expect(json.barcodes).toBeUndefined();
         expect(json.storeCard.secondaryFields[0].value).toBe("Erika Mustermann");
+        // Wallet zeigt unter dem Streifen nur vier Felder; die Berechtigungen müssen dabei sein.
+        const vorne = [...json.storeCard.secondaryFields, ...json.storeCard.auxiliaryFields];
+        expect(vorne.length).toBeLessThanOrEqual(4);
+        expect(vorne.map((feld: { key: string }) => feld.key)).toContain("kurz");
+        expect(json.storeCard.backFields.map((feld: { key: string }) => feld.key)).toContain("geburtsdatum-rueck");
     });
 
     it("weist unvollständige Ausweise, fremde Bilder und zu große Anfragen ab", async () => {
@@ -270,5 +278,49 @@ describe("Dienst", () => {
             folge.push((await sende(`${knapp}/wallet/google`, { ausweis: AUSWEIS })).status);
         }
         expect(folge).toEqual([200, 200, 429]);
+    });
+});
+
+describe("Logo und Emblem", () => {
+    // Ersatzbilder: Die echten Zeichen liegen nicht im Repository.
+    const logo = new Bild(300, 100, WEISS).png();
+    const emblemGross = new Bild(200, 200, WEISS);
+    emblemGross.rechteck(50, 60, 100, 80, KENNFARBE);
+    const emblem = emblemGross.png();
+
+    it("setzt Logo und Emblem in den Apple-Pass und lässt den Text neben dem Logo weg", () => {
+        const einstellung = {
+            passTyp: "pass.test", team: "TEAM123456", organisation: "Prüfung",
+            zertifikat: readFileSync(pfad("pass.pem"), "utf8"), schluessel: readFileSync(pfad("pass.key"), "utf8"),
+            wwdr: readFileSync(pfad("wwdr.pem"), "utf8"), marke: { logo, emblem }
+        };
+        const ausweis = bereinige(AUSWEIS);
+        const dateien = entpacke(applePass(ausweis, null, einstellung));
+        expect(pngMasse(dateien.get("logo@2x.png")!)).toEqual({ breite: 300, hoehe: 100 });
+        expect(pngMasse(dateien.get("logo@3x.png")!)).toEqual({ breite: 450, hoehe: 150 });
+        const json = passJson(ausweis, einstellung, "x");
+        expect(json["logoText"]).toBeUndefined();
+        expect(json["backgroundColor"]).toBe("rgb(0, 56, 123)");
+        const { marke: _, ...ohneMarke } = einstellung;
+        expect(passJson(ausweis, ohneMarke, "x")["logoText"]).toBe("THW-Ausweis");
+    });
+
+    it("schneidet den Rand des Emblems ab", () => {
+        const knapp = zugeschnitten(pngLesen(emblem), WEISS);
+        expect([knapp.breite, knapp.hoehe]).toEqual([100, 80]);
+    });
+
+    it("gibt Google Wallet die Adresse des Emblems und liefert es aus", async () => {
+        const objekt = googleObjekt(bereinige(AUSWEIS), {
+            aussteller: "1", klasse: "k", konto: "k", schluessel: "", urspruenge: [], logo: "https://ausweis.example/marke/emblem.png"
+        }, "x");
+        expect(objekt["hexBackgroundColor"]).toBe("#00387b");
+        expect(objekt["logo"]).toMatchObject({ sourceUri: { uri: "https://ausweis.example/marke/emblem.png" } });
+        const png = symbol(660, pngLesen(emblem));
+        const mit = await starte({ web: ordner, hinterProxy: false, urspruenge: [], grenze: 5, emblem: png });
+        const antwort = await fetch(`${mit}/marke/emblem.png`);
+        expect(antwort.headers.get("content-type")).toBe("image/png");
+        expect(Buffer.from(await antwort.arrayBuffer())).toEqual(png);
+        expect((await fetch(`${adresse}/marke/emblem.png`)).status).toBe(404);
     });
 });

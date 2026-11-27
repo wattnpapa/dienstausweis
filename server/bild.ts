@@ -8,7 +8,8 @@ export type Farbe = readonly [number, number, number];
 
 export const WEISS: Farbe = [255, 255, 255];
 export const SCHWARZ: Farbe = [0, 0, 0];
-export const KENNFARBE: Farbe = [18, 39, 94];
+/** RAL 5002 Ultramarinblau, die Grundfarbe des THW (sRGB-Näherung). */
+export const KENNFARBE: Farbe = [0, 56, 123];
 
 export class Bild {
     readonly pixel: Uint8Array;
@@ -87,8 +88,20 @@ export function pngMasse(daten: Uint8Array): { breite: number; hoehe: number } |
     return { breite: puffer.readUInt32BE(16), hoehe: puffer.readUInt32BE(20) };
 }
 
-/** Das Symbol des Passes: eine helle Karte auf der Kennfarbe, ohne fremde Zeichen. */
-export function symbol(kante: number): Buffer {
+/**
+ * Das Symbol des Passes. Mit Emblem (blau auf weiß gelesen) steht es mittig
+ * auf Weiß, sonst eine helle Karte auf der Kennfarbe.
+ */
+export function symbol(kante: number, mitRand: Bild | null = null): Buffer {
+    if (mitRand !== null) {
+        const emblem = zugeschnitten(mitRand, WEISS);
+        const bild = new Bild(kante, kante, WEISS);
+        const rand = Math.round(kante * 0.1);
+        const hoehe = kante - 2 * rand;
+        const breite = Math.round(hoehe * emblem.breite / emblem.hoehe);
+        bild.bild(emblem, Math.round((kante - breite) / 2), rand, breite, hoehe);
+        return bild.png();
+    }
     const bild = new Bild(kante, kante, KENNFARBE);
     const e = kante / 29;
     const r = (wert: number): number => Math.round(wert * e);
@@ -102,10 +115,10 @@ export function symbol(kante: number): Buffer {
 
 /**
  * Liest ein PNG, wie es ein Browser aus einer Zeichenfläche schreibt: 8 Bit,
- * RGB oder RGBA, ohne Zeilensprung. Durchsichtiges wird weiß.
+ * RGB oder RGBA, ohne Zeilensprung. Durchsichtiges wird zur Grundfarbe.
  * @throws bei jedem anderen oder beschädigten PNG
  */
-export function pngLesen(daten: Uint8Array): Bild {
+export function pngLesen(daten: Uint8Array, grund: Farbe = WEISS): Bild {
     const puffer = Buffer.from(daten.buffer, daten.byteOffset, daten.byteLength);
     const masse = pngMasse(puffer);
     const kanaele = puffer[25] === 6 ? 4 : 3;
@@ -126,7 +139,7 @@ export function pngLesen(daten: Uint8Array): Bild {
     if (roh.length !== (breit + 1) * masse.hoehe) {
         throw new Error("Das PNG ist unvollständig.");
     }
-    const bild = new Bild(masse.breite, masse.hoehe, WEISS);
+    const bild = new Bild(masse.breite, masse.hoehe, grund);
     let davor = new Uint8Array(breit);
     for (let zeile = 0; zeile < masse.hoehe; zeile++) {
         const filter = roh[zeile * (breit + 1)]!;
@@ -153,12 +166,50 @@ export function pngLesen(daten: Uint8Array): Bild {
         }
         for (let spalte = 0; spalte < masse.breite; spalte++) {
             const deckung = kanaele === 4 ? aktuell[spalte * 4 + 3]! / 255 : 1;
-            const misch = (wert: number): number => Math.round(wert * deckung + 255 * (1 - deckung));
-            bild.rechteck(spalte, zeile, 1, 1, [misch(aktuell[spalte * kanaele]!), misch(aktuell[spalte * kanaele + 1]!), misch(aktuell[spalte * kanaele + 2]!)]);
+            const misch = (kanal: number): number => Math.round(aktuell[spalte * kanaele + kanal]! * deckung + grund[kanal]! * (1 - deckung));
+            bild.rechteck(spalte, zeile, 1, 1, [misch(0), misch(1), misch(2)]);
         }
         davor = aktuell;
     }
     return bild;
+}
+
+/**
+ * Logo für die Kopfzeile des Apple-Passes, auf der Kennfarbe gelesen und auf
+ * die gegebene Höhe gebracht; die Breite folgt dem Seitenverhältnis, höchstens
+ * 3,2-mal die Höhe (Wallet erlaubt 160 × 50 Punkte).
+ */
+export function logoBild(logo: Bild, hoehe: number): Buffer {
+    const breite = Math.min(Math.round(hoehe * 3.2), Math.round(hoehe * logo.breite / logo.hoehe));
+    const ziel = new Bild(breite, hoehe, KENNFARBE);
+    ziel.bild(logo, 0, 0, breite, hoehe);
+    return ziel.png();
+}
+
+/** Schneidet den Rand in der Grundfarbe ab; das Emblem kommt mit viel Luft. */
+export function zugeschnitten(quelle: Bild, grund: Farbe): Bild {
+    let [links, oben, rechts, unten] = [quelle.breite, quelle.hoehe, -1, -1];
+    for (let y = 0; y < quelle.hoehe; y++) {
+        for (let x = 0; x < quelle.breite; x++) {
+            const stelle = (y * quelle.breite + x) * 3;
+            const abstand = Math.abs(quelle.pixel[stelle]! - grund[0]) + Math.abs(quelle.pixel[stelle + 1]! - grund[1])
+                + Math.abs(quelle.pixel[stelle + 2]! - grund[2]);
+            if (abstand > 24) {
+                links = Math.min(links, x);
+                rechts = Math.max(rechts, x);
+                oben = Math.min(oben, y);
+                unten = Math.max(unten, y);
+            }
+        }
+    }
+    if (rechts < 0) {
+        return quelle;
+    }
+    const ziel = new Bild(rechts - links + 1, unten - oben + 1, grund);
+    for (let y = oben; y <= unten; y++) {
+        ziel.pixel.set(quelle.pixel.subarray((y * quelle.breite + links) * 3, (y * quelle.breite + rechts + 1) * 3), (y - oben) * ziel.breite * 3);
+    }
+    return ziel;
 }
 
 /** Bild auf eine neue Größe bringen. */
