@@ -3,7 +3,7 @@ import forge from "node-forge";
 import {
     berechtigungenAnzeige, berechtigungenText, datumDeutsch, strichcodeInhalt, vollerName, type Ausweis
 } from "../src/daten.js";
-import { KENNFARBE, logoBild, pngLesen, skaliert, strichcodeBild, symbol } from "./bild.js";
+import { KENNFARBE, logoBild, SCHWARZ, pngLesen, skaliert, strichcodeBild, symbol } from "./bild.js";
 import { zip } from "./zip.js";
 
 // Apple-Wallet-Pass (.pkpass): pass.json und Bilder, eine Liste ihrer
@@ -148,7 +148,7 @@ export function applePass(ausweis: Ausweis, foto: Uint8Array | null, einstellung
     dateien.set("icon@2x.png", symbol(58, emblem));
     dateien.set("icon@3x.png", symbol(87, emblem));
     if (einstellung.marke) {
-        const logo = pngLesen(einstellung.marke.logo, KENNFARBE);
+        const logo = pngLesen(einstellung.marke.logo, SCHWARZ);
         dateien.set("logo@2x.png", logoBild(logo, 100));
         dateien.set("logo@3x.png", logoBild(logo, 150));
     }

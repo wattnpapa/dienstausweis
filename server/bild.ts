@@ -56,17 +56,34 @@ export class Bild {
             // Jede Zeile beginnt mit dem Filtertyp 0 (keiner).
             zeilen.set(this.pixel.subarray(zeile * this.breite * 3, (zeile + 1) * this.breite * 3), zeile * (this.breite * 3 + 1) + 1);
         }
-        const kopf = Buffer.alloc(13);
-        kopf.writeUInt32BE(this.breite, 0);
-        kopf.writeUInt32BE(this.hoehe, 4);
-        kopf.set([8, 2, 0, 0, 0], 8); // 8 Bit, RGB
-        return Buffer.concat([
-            Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-            block("IHDR", kopf),
-            block("IDAT", deflateSync(zeilen)),
-            block("IEND", Buffer.alloc(0))
-        ]);
+        return pngAus(this.breite, this.hoehe, 2, zeilen); // RGB
     }
+
+    /** PNG in Weiß, die Helligkeit (roter Kanal) wird zur Deckung. */
+    pngWeissMitDeckung(): Buffer {
+        const zeilen = Buffer.alloc((this.breite * 4 + 1) * this.hoehe);
+        for (let zeile = 0; zeile < this.hoehe; zeile++) {
+            for (let spalte = 0; spalte < this.breite; spalte++) {
+                const stelle = zeile * (this.breite * 4 + 1) + 1 + spalte * 4;
+                zeilen.set([255, 255, 255, this.pixel[(zeile * this.breite + spalte) * 3]!], stelle);
+            }
+        }
+        return pngAus(this.breite, this.hoehe, 6, zeilen); // RGBA
+    }
+}
+
+/** Setzt ein PNG aus fertig gefilterten Zeilen zusammen (8 Bit, Farbtyp 2 = RGB, 6 = RGBA). */
+function pngAus(breite: number, hoehe: number, farbtyp: 2 | 6, zeilen: Buffer): Buffer {
+    const kopf = Buffer.alloc(13);
+    kopf.writeUInt32BE(breite, 0);
+    kopf.writeUInt32BE(hoehe, 4);
+    kopf.set([8, farbtyp, 0, 0, 0], 8);
+    return Buffer.concat([
+        Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+        block("IHDR", kopf),
+        block("IDAT", deflateSync(zeilen)),
+        block("IEND", Buffer.alloc(0))
+    ]);
 }
 
 function block(art: string, inhalt: Buffer): Buffer {
@@ -175,15 +192,17 @@ export function pngLesen(daten: Uint8Array, grund: Farbe = WEISS): Bild {
 }
 
 /**
- * Logo für die Kopfzeile des Apple-Passes, auf der Kennfarbe gelesen und auf
- * die gegebene Höhe gebracht; die Breite folgt dem Seitenverhältnis, höchstens
- * 3,2-mal die Höhe (Wallet erlaubt 160 × 50 Punkte).
+ * Logo für die Kopfzeile des Apple-Passes: weiß mit durchsichtigem Grund,
+ * denn Wallet legt über die Hintergrundfarbe einen Verlauf. Das Logo wird auf
+ * Schwarz gelesen; die Helligkeit ist dann die Deckung. Höhe wie gegeben, die
+ * Breite folgt dem Seitenverhältnis, höchstens 3,2-mal die Höhe (Wallet
+ * erlaubt 160 × 50 Punkte).
  */
-export function logoBild(logo: Bild, hoehe: number): Buffer {
-    const breite = Math.min(Math.round(hoehe * 3.2), Math.round(hoehe * logo.breite / logo.hoehe));
-    const ziel = new Bild(breite, hoehe, KENNFARBE);
-    ziel.bild(logo, 0, 0, breite, hoehe);
-    return ziel.png();
+export function logoBild(logoAufSchwarz: Bild, hoehe: number): Buffer {
+    const breite = Math.min(Math.round(hoehe * 3.2), Math.round(hoehe * logoAufSchwarz.breite / logoAufSchwarz.hoehe));
+    const ziel = new Bild(breite, hoehe, SCHWARZ);
+    ziel.bild(logoAufSchwarz, 0, 0, breite, hoehe);
+    return ziel.pngWeissMitDeckung();
 }
 
 /** Schneidet den Rand in der Grundfarbe ab; das Emblem kommt mit viel Luft. */

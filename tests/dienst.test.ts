@@ -298,6 +298,8 @@ describe("Logo und Emblem", () => {
         const dateien = entpacke(applePass(ausweis, null, einstellung));
         expect(pngMasse(dateien.get("logo@2x.png")!)).toEqual({ breite: 300, hoehe: 100 });
         expect(pngMasse(dateien.get("logo@3x.png")!)).toEqual({ breite: 450, hoehe: 150 });
+        // Durchsichtig (RGBA), weil Wallet über die Hintergrundfarbe einen Verlauf legt.
+        expect(dateien.get("logo@2x.png")![25]).toBe(6);
         const json = passJson(ausweis, einstellung, "x");
         expect(json["logoText"]).toBeUndefined();
         expect(json["backgroundColor"]).toBe("rgb(0, 56, 123)");
