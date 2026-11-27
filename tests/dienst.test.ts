@@ -197,12 +197,13 @@ describe("Apple Wallet", () => {
         expect(dateien.has("thumbnail@2x.png")).toBe(false);
         const json = JSON.parse((dateien.get("pass.json") as Buffer).toString());
         expect(json.barcodes).toBeUndefined();
-        expect(json.storeCard.secondaryFields[0].value).toBe("Erika Mustermann");
-        // Wallet setzt alle Felder unter dem Streifen in eine Zeile; vorne nur Name und Gültigkeit.
-        const vorne = [...json.storeCard.secondaryFields, ...json.storeCard.auxiliaryFields];
-        expect(vorne.map((feld: { key: string }) => feld.key)).toEqual(["name", "gueltig"]);
-        const hinten = json.storeCard.backFields.map((feld: { key: string }) => feld.key);
-        expect(hinten).toEqual(expect.arrayContaining(["dienststelle-rueck", "geburtsdatum-rueck", "berechtigungen"]));
+        // Eintrittskarte: Angaben in der ersten Zeile, die Berechtigungen allein in der zweiten.
+        const schluessel = (liste: Array<{ key: string }>) => liste.map(feld => feld.key);
+        expect(json.storeCard).toBeUndefined();
+        expect(schluessel(json.eventTicket.secondaryFields)).toEqual(["name", "dienststelle", "geburtsdatum", "gueltig"]);
+        expect(json.eventTicket.auxiliaryFields).toEqual([{ key: "kurz", label: "Berechtigungen", value: "CE · AGT" }]);
+        expect(json.eventTicket.primaryFields).toBeUndefined();
+        expect(pngLesen(dateien.get("strip@3x.png") as Buffer).hoehe).toBe(294);
     });
 
     it("weist unvollständige Ausweise, fremde Bilder und zu große Anfragen ab", async () => {

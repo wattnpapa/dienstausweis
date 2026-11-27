@@ -33,10 +33,11 @@ lassen sich Art (Code 39 oder Code 128) und ein abweichender Inhalt setzen.
 
 Apple Wallet zeichnet von den eindimensionalen Codes nur Code 128 selbst. Bei
 Code 39 legt der Dienst deshalb ein Streifenbild in die Karte (Passart
-`storeCard`): links das Foto, daneben der Strichcode. Neben dem Foto ist ein
-Modul des Strichcodes einen Punkt breit, etwa 0,16 mm; ohne Foto ist er rund ein
-Drittel breiter. Ob das Terminal ihn so vom Bildschirm liest, ist am Gerät zu
-prüfen. Google Wallet zeichnet Code 39 selbst, nimmt aber keine Fotos an, weil
+`eventTicket`, Streifen 375 × 98 Punkt): links das Foto, daneben der
+Strichcode. Darunter stehen zwei Zeilen: Name, Dienststelle, Geburtsdatum und
+Gültigkeit, dann die Berechtigungen. Die Kundenkarte (`storeCard`) hätte nur
+eine Zeile für alles. Ob das Terminal den Strichcode vom Bildschirm liest, ist
+am Gerät zu prüfen. Google Wallet zeichnet Code 39 selbst, nimmt aber keine Fotos an, weil
 Bilder dort unter einer öffentlichen Adresse liegen müssten.
 
 ## Berechtigungen
