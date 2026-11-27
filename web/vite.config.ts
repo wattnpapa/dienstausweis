@@ -29,7 +29,7 @@ export default defineConfig({
     // Fassung zum Anzeigen im Fuß.
     define: { __FASSUNG__: JSON.stringify(FASSUNG) },
     // Beim Entwickeln signiert der Dienst nebenan (npm run dienst:build && npm start).
-    server: { proxy: { "/wallet": "http://127.0.0.1:8080" } },
+    server: { proxy: { "/wallet": "http://127.0.0.1:8080", "/marke": "http://127.0.0.1:8080" } },
     build: {
         outDir: "../dist-web",
         emptyOutDir: true,

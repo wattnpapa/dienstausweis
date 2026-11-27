@@ -894,3 +894,79 @@ details.unterbereich > summary {
 #wallet-karte { border-left: 6px solid var(--akzent); }
 #wallet-karte .aktionen { margin-top: var(--r-3); }
 #wallet-fehlt { margin-bottom: var(--r-2); }
+
+/* ---- Vorschau der Wallet-Karte -------------------------------------
+   Nur auf breiten Bildschirmen, rechts neben der Maske und mitlaufend.
+   Die Karte selbst zeigt die Farben, die Wallet zeigt: Kennfarbe, weiße
+   Schrift, Strichcode schwarz auf weiß, in jedem Anzeigemodus gleich. */
+.wallet-vorschau { display: none; }
+@media (min-width: 64rem) {
+  :root { --satzspiegel: 70rem; }
+  #ansicht-daten.arbeitsflaeche { grid-template-columns: minmax(0, 1fr) 23rem; gap: 0 var(--r-5); align-items: start; }
+  #ansicht-daten > #maske { grid-column: 1; grid-row: 1; }
+  .wallet-vorschau {
+    display: block; grid-column: 2; grid-row: 1; position: sticky; top: var(--r-4);
+    max-height: calc(100dvh - 2 * var(--r-4)); overflow-y: auto;
+  }
+}
+.vorschau-kopf { display: flex; align-items: center; justify-content: space-between; gap: var(--r-2); margin-bottom: var(--r-3); }
+.vorschau-kopf h2 { margin: 0; font-size: var(--t-l); }
+.vorschau-wahl { display: inline-flex; }
+.vorschau-wahl button { min-height: 2.25rem; padding: 0 var(--r-3); font-size: var(--t-s); }
+.vorschau-wahl button + button { margin-left: calc(-1 * var(--strich)); }
+.vorschau-wahl button[aria-pressed="true"] { background: var(--akzent); border-color: var(--akzent); color: var(--auf-akzent); }
+.wallet-vorschau > .hinweis { margin-top: var(--r-3); }
+
+.pass {
+  --p-auf: #fff; --p-beschriftung: #cbcfdc;
+  width: 21.5rem; max-width: 100%; margin: 0 auto; color: var(--p-auf);
+  background: #00387b; font-family: -apple-system, system-ui, "Segoe UI", Roboto, var(--schrift);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  display: flex; flex-direction: column; gap: 0.9rem; padding: 0.75rem 0.85rem 1rem;
+}
+/* Wallet legt über die Hintergrundfarbe einen leichten Verlauf. */
+.pass.apple { border-radius: 12px; background: linear-gradient(180deg, #0b4590 0%, #00387b 45%, #00336f 100%); min-height: 25rem; }
+/* Eintrittskarte: Kerbe oben in der Mitte. */
+.pass.apple.eintritt { -webkit-mask: radial-gradient(circle 0.9rem at 50% 0, transparent 98%, #000 100%); mask: radial-gradient(circle 0.9rem at 50% 0, transparent 98%, #000 100%); min-height: 0; }
+.p-kopf { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--r-3); min-height: 2rem; }
+.p-logo { height: 2rem; width: auto; max-width: 9rem; display: block; }
+.p-logotext { font-size: 1.05rem; font-weight: 600; line-height: 2rem; }
+.p-feld { display: flex; flex-direction: column; min-width: 0; }
+.p-feld.rechts { text-align: right; align-items: flex-end; }
+.p-beschriftung { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--p-beschriftung); line-height: 1.3; }
+.p-wert { font-size: 1rem; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.p-wert.platzhalter, .g-kopfzeile.platzhalter { opacity: 0.45; font-style: italic; }
+.p-feld.primaer .p-wert { font-size: 1.6rem; font-weight: 300; white-space: normal; overflow-wrap: anywhere; line-height: 1.15; }
+.p-mitte { display: flex; gap: var(--r-3); align-items: flex-start; }
+.p-felder { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.9rem; }
+.p-vorschaubild { flex: 0 0 auto; width: 5.625rem; aspect-ratio: 3 / 4; object-fit: cover; display: block; }
+.p-reihe { display: flex; gap: var(--r-3); }
+.p-reihe > .p-feld { flex: 0 1 auto; }
+.p-reihe .p-wert { font-size: 0.9rem; }
+.p-reihe > .p-feld:last-child:not(:first-child) { margin-left: auto; text-align: right; align-items: flex-end; }
+.p-fuss { margin-top: auto; display: flex; justify-content: center; padding-top: var(--r-2); }
+.p-strichcode {
+  background: #fff; color: #000; border-radius: 6px; padding: 0.6rem 0.75rem 0.35rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.2rem; width: 15.5rem; max-width: 100%;
+}
+.p-strichcode svg { display: block; width: 100%; height: 3.6rem; }
+.p-alttext { font-size: 0.7rem; letter-spacing: 0.05em; font-family: var(--schrift-daten); }
+.p-leer { font-size: var(--t-xs); color: #444; text-align: center; padding: 0.6rem 0; }
+/* Streifenbild der Eintrittskarte, 375 × 98 Punkt über die ganze Breite. */
+.p-streifen { margin: 0 -0.85rem; aspect-ratio: 375 / 98; background: #fff; display: flex; align-items: stretch; }
+.p-streifenfoto { height: 100%; aspect-ratio: 3 / 4; object-fit: cover; display: block; flex: 0 0 auto; }
+.p-streifen .p-strichcode { flex: 1 1 auto; width: auto; border-radius: 0; padding: 0; justify-content: center; }
+.p-streifen .p-strichcode svg { width: calc(100% - 1rem); height: 72%; }
+.p-unter { font-size: var(--t-xs); color: var(--text-2); max-width: 21.5rem; margin: var(--r-3) auto 0; }
+
+.pass.google { border-radius: 24px; padding: 1rem 1.1rem 1.2rem; gap: 0.5rem; font-family: Roboto, system-ui, var(--schrift); }
+.g-kopf { display: flex; align-items: center; gap: 0.6rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.25); margin-bottom: 0.35rem; }
+.g-logo { width: 2rem; height: 2rem; border-radius: 50%; background: #fff; object-fit: contain; display: block; }
+.g-titel { font-size: 0.95rem; font-weight: 500; }
+.g-unterzeile { font-size: 0.8rem; color: var(--p-beschriftung); }
+.g-kopfzeile { font-size: 1.45rem; line-height: 1.2; overflow-wrap: anywhere; }
+.pass.google .p-fuss { padding-top: var(--r-4); }
+.pass.google .p-strichcode { border-radius: 12px; }
+.g-details { max-width: 21.5rem; margin: var(--r-2) auto 0; font-size: var(--t-s); border-top: var(--strich) solid var(--linie-fein); }
+.g-details dt { font-size: var(--t-xs); color: var(--text-2); margin-top: var(--r-2); }
+.g-details dd { margin: 0; overflow-wrap: anywhere; }

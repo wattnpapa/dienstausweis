@@ -328,5 +328,10 @@ describe("Logo und Emblem", () => {
         expect(antwort.headers.get("content-type")).toBe("image/png");
         expect(Buffer.from(await antwort.arrayBuffer())).toEqual(png);
         expect((await fetch(`${adresse}/marke/emblem.png`)).status).toBe(404);
+        const logoPng = Buffer.from([1, 2, 3]);
+        const mitLogo = await starte({ web: ordner, hinterProxy: false, urspruenge: [], grenze: 5, logo: logoPng });
+        expect(Buffer.from(await (await fetch(`${mitLogo}/marke/logo.png`)).arrayBuffer())).toEqual(logoPng);
+        expect((await fetch(`${mitLogo}/marke/emblem.png`)).status).toBe(404);
+        expect((await fetch(`${mitLogo}/marke/sonst.png`)).status).toBe(404);
     });
 });

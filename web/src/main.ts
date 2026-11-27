@@ -4,8 +4,10 @@ import {
     LEER, abgelaufen, bereinige, datumDeutsch, fehlendeAngaben, strichcodeInhalt,
     type Ausweis, type Berechtigung
 } from "../../src/daten.js";
-import { RUHEZONE, strichcodeFehler, strichcodeLaeufe, strichcodeModule } from "../../src/strichcode.js";
+import { strichcodeFehler, strichcodeModule } from "../../src/strichcode.js";
 import { fotoAusDatei, fotoFuerPass, fotoGueltig } from "./foto.js";
+import { strichcodeSvg } from "./strichcode-svg.js";
+import { baueWalletVorschau, walletVorschauStand, zeigeWalletVorschau } from "./wallet-vorschau.js";
 
 // Die Seite: Maske, Strichcode-Vorschau und die Knöpfe, die eine Karte für
 // Apple Wallet oder Google Wallet erstellen. Die Eingaben liegen nur im
@@ -118,38 +120,6 @@ el("kurzmeldung").addEventListener("click", () => {
 
 function fehlertext(fehler: unknown): string {
     return fehler instanceof Error ? fehler.message : String(fehler);
-}
-
-// ---- Strichcode als SVG ----------------------------------------------------
-
-const SVG = "http://www.w3.org/2000/svg";
-
-/** Strichcode mit Ruhezone; immer schwarz auf weiß, auch in den dunklen Anzeigemodi. */
-function strichcodeSvg(module: string): SVGSVGElement {
-    const breite = module.length + 2 * RUHEZONE;
-    const svg = document.createElementNS(SVG, "svg");
-    svg.setAttribute("viewBox", `0 0 ${breite} 10`);
-    svg.setAttribute("preserveAspectRatio", "none");
-    svg.setAttribute("shape-rendering", "crispEdges");
-    svg.setAttribute("aria-hidden", "true");
-    const grund = document.createElementNS(SVG, "rect");
-    grund.setAttribute("width", String(breite));
-    grund.setAttribute("height", "10");
-    grund.setAttribute("fill", "#fff");
-    svg.append(grund);
-    let x = RUHEZONE;
-    let weg = "";
-    strichcodeLaeufe(module).forEach((lauf, stelle) => {
-        if (stelle % 2 === 0) {
-            weg += `M${x} 0h${lauf}v10h-${lauf}z`;
-        }
-        x += lauf;
-    });
-    const striche = document.createElementNS(SVG, "path");
-    striche.setAttribute("d", weg);
-    striche.setAttribute("fill", "#000");
-    svg.append(striche);
-    return svg;
 }
 
 // ---- Maske -----------------------------------------------------------------
@@ -298,6 +268,7 @@ function zeigeStrichcodeStand(): void {
     } else if (fehler === null) {
         vorschau.append(strichcodeSvg(strichcodeModule(ausweis.strichcodeArt, inhalt)), neu("span", "daten", inhalt));
     }
+    zeigeWalletVorschau(ausweis, foto);
     walletStand();
 }
 
@@ -321,6 +292,7 @@ function setzeFoto(wert: string): void {
     sichere();
     fotoElement(el("m-foto"));
     el("foto-entfernen").hidden = foto === "";
+    zeigeWalletVorschau(ausweis, foto);
 }
 
 el<HTMLInputElement>("foto-datei").addEventListener("change", async ereignis => {
@@ -383,6 +355,9 @@ async function frageWallet(): Promise<void> {
         const antwort = await fetch(`${DIENST}/stand`, { cache: "no-store" });
         const stand = antwort.ok ? await antwort.json() as { apple?: unknown; google?: unknown } : null;
         wallet = stand ? { apple: stand.apple === true, google: stand.google === true } : null;
+        if (wallet) {
+            walletVorschauStand(wallet.apple, wallet.google);
+        }
     } catch {
         wallet = null;
     }
@@ -464,6 +439,8 @@ el<HTMLButtonElement>("wallet-google").addEventListener("click", ereignis => mit
 // ---- Start -----------------------------------------------------------------
 
 baueKatalog();
+// Logo und Emblem liegen beim Dienst unter /marke/, neben /wallet/.
+baueWalletVorschau(el("wallet-vorschau"), DIENST.replace(/\/wallet$/, ""));
 fuelleMaske();
 sichere();
 void frageWallet();

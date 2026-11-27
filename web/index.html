@@ -52,7 +52,7 @@
       <p class="offline-badge">✓ Ohne Konto. Der Server signiert die Karte und speichert nichts.</p>
       <p class="warnung" id="speicher-warnung" role="alert" hidden>Der Browser lässt hier nichts speichern (Privatmodus?). Die Eingaben sind nach dem Schließen der Seite weg.</p>
 
-      <section id="ansicht-daten">
+      <section id="ansicht-daten" class="arbeitsflaeche">
         <form id="maske" novalidate autocomplete="off">
           <section class="karte">
             <h2>Ausweis</h2>
@@ -135,6 +135,17 @@
             <button type="button" id="alles-loeschen">Eingaben von diesem Gerät löschen</button>
           </div>
         </form>
+        <aside class="wallet-vorschau" id="wallet-vorschau" aria-labelledby="vorschau-titel">
+          <div class="vorschau-kopf">
+            <h2 id="vorschau-titel">So sieht die Karte aus</h2>
+            <div class="vorschau-wahl" role="group" aria-label="Wallet">
+              <button type="button" data-wallet="apple">Apple</button>
+              <button type="button" data-wallet="google">Google</button>
+            </div>
+          </div>
+          <div class="vorschau-flaeche"></div>
+          <p class="hinweis">Ungefähre Darstellung. Die Karte zeichnet Wallet selbst, Schrift und Abstände weichen etwas ab.</p>
+        </aside>
       </section>
     </main>
 

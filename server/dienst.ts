@@ -25,6 +25,8 @@ export interface DienstEinstellung {
     grenze: number;
     /** Emblem als fertiges PNG unter /marke/emblem.png; Google Wallet lädt es von dort. */
     emblem?: Buffer;
+    /** Logo weiß mit Deckung, wie im Apple-Pass; die Vorschau der Seite lädt es von /marke/logo.png. */
+    logo?: Buffer;
 }
 
 const MAX_ANFRAGE = 900_000;
@@ -177,9 +179,13 @@ export function erzeugeDienst(einstellung: DienstEinstellung): Server {
         }
         if (pfad === "/gesundheit") {
             json(antwort, 200, { ok: true });
-        } else if (pfad === "/marke/emblem.png" && einstellung.emblem && (anfrage.method === "GET" || anfrage.method === "HEAD")) {
-            antwort.writeHead(200, { "Content-Type": "image/png", "Content-Length": einstellung.emblem.length, "Cache-Control": "public, max-age=86400" });
-            antwort.end(anfrage.method === "HEAD" ? undefined : einstellung.emblem);
+        } else if (pfad.startsWith("/marke/") && (anfrage.method === "GET" || anfrage.method === "HEAD")) {
+            const bild = pfad === "/marke/emblem.png" ? einstellung.emblem : pfad === "/marke/logo.png" ? einstellung.logo : undefined;
+            if (!bild) {
+                throw new Abweisung(404, "Nicht gefunden.");
+            }
+            antwort.writeHead(200, { "Content-Type": "image/png", "Content-Length": bild.length, "Cache-Control": "public, max-age=86400" });
+            antwort.end(anfrage.method === "HEAD" ? undefined : bild);
         } else if (pfad === "/wallet/stand" && anfrage.method === "GET") {
             json(antwort, 200, { apple: Boolean(einstellung.apple), google: Boolean(einstellung.google) });
         } else if (pfad === "/wallet/apple" && anfrage.method === "POST") {

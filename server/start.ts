@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AppleEinstellung, Marke } from "./apple.js";
-import { pngLesen, symbol } from "./bild.js";
+import { logoBild, pngLesen, SCHWARZ, symbol } from "./bild.js";
 import { erzeugeDienst } from "./dienst.js";
 import type { GoogleEinstellung } from "./google.js";
 
@@ -101,7 +101,10 @@ erzeugeDienst({
     hinterProxy: wert("DA_HINTER_PROXY") === "1",
     urspruenge: liste("DA_URSPRUENGE"),
     grenze: Number(wert("DA_GRENZE") || 20),
-    ...(markeEinstellung ? { emblem: symbol(660, pngLesen(markeEinstellung.emblem)) } : {}),
+    ...(markeEinstellung ? {
+        emblem: symbol(660, pngLesen(markeEinstellung.emblem)),
+        logo: logoBild(pngLesen(markeEinstellung.logo, SCHWARZ), 150)
+    } : {}),
     ...(appleEinstellung ? { apple: appleEinstellung } : {}),
     ...(googleEinstellung ? { google: googleEinstellung } : {})
 }).listen(port, host, () => {
