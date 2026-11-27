@@ -32,6 +32,11 @@ npm start            # Dienst starten (Einstellungen aus der Umgebung, .env.beis
   und laufender Endnummer (`01234567-01`); Wallet zeichnet ihn selbst. Code 39
   bleibt wählbar. Den zeichnet Apple Wallet nicht: Foto und Strichcode stehen
   dann gemeinsam im Streifenbild einer Eintrittskarte.
+- Die Dienststelle wird in `bereinige` auf die Schreibweise des Verzeichnisses
+  gebracht (`src/dienststelle.ts`: „OV Aachen“, „RSt Aachen“, „LV Bayern“;
+  Kürzel wie `OAAC` gehen auch). Unbekanntes bleibt freier Text.
+  `src/dienststellen.ts` ist erzeugt aus den Vokabularen des Erfassungsbogens
+  (`wattnpapa/bos-vokabulare`): `node scripts/dienststellen-uebernehmen.mjs`.
 - Neue Berechtigungen kommen in `src/berechtigungen.ts`. Eine vergebene `id`
   ändert sich nie mehr, sonst verlieren gespeicherte Ausweise den Eintrag.
 - Der Strichcode steht in jedem Anzeigemodus schwarz auf weiß.

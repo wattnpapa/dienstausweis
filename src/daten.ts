@@ -1,4 +1,5 @@
 import { berechtigungsArt } from "./berechtigungen.js";
+import { einheitlicheDienststelle } from "./dienststelle.js";
 import { STRICHCODE_ARTEN, type StrichcodeArt } from "./strichcode.js";
 
 // Der Ausweis, wie ihn App und Dienst kennen. `bereinige` ist die einzige Tür:
@@ -83,7 +84,7 @@ export function bereinige(roh: unknown): Ausweis {
         nummer: text(quelle["nummer"], 30),
         vorname: text(quelle["vorname"], 60),
         nachname: text(quelle["nachname"], 60),
-        dienststelle: text(quelle["dienststelle"], 80),
+        dienststelle: einheitlicheDienststelle(text(quelle["dienststelle"], 80)),
         geburtsdatum: datum(quelle["geburtsdatum"]),
         gueltigBis: datum(quelle["gueltigBis"]),
         strichcodeArt: STRICHCODE_ARTEN.includes(art as StrichcodeArt) ? art as StrichcodeArt : "code128",

@@ -4,6 +4,8 @@ import {
     LEER, abgelaufen, bereinige, datumDeutsch, fehlendeAngaben, strichcodeInhalt,
     type Ausweis, type Berechtigung
 } from "../../src/daten.js";
+import { findeDienststelle } from "../../src/dienststelle.js";
+import { DIENSTSTELLEN } from "../../src/dienststellen.js";
 import { strichcodeFehler, strichcodeModule } from "../../src/strichcode.js";
 import { fotoAusDatei, fotoFuerPass, fotoGueltig } from "./foto.js";
 import { strichcodeSvg } from "./strichcode-svg.js";
@@ -161,6 +163,28 @@ function baueKatalog(): void {
     }));
 }
 
+function baueDienststellen(): void {
+    el("dienststellen").replaceChildren(...DIENSTSTELLEN.map(([kurz, name]) => {
+        const wahl = neu("option");
+        wahl.value = name;
+        if (kurz) {
+            wahl.label = kurz;
+        }
+        return wahl;
+    }));
+}
+
+/** Sagt unter dem Feld, was auf der Karte stehen wird. */
+function zeigeDienststelle(): void {
+    const eingabe = feld("dienststelle").value.trim();
+    const treffer = findeDienststelle(eingabe);
+    el("dienststelle-stand").textContent = eingabe === ""
+        ? "Freiwillig. Ort oder Kürzel tippen und aus der Liste wählen."
+        : treffer
+            ? `Auf der Karte: ${treffer.name}${treffer.kurz ? ` (${treffer.kurz})` : ""}`
+            : "Nicht im Verzeichnis. Steht so auf der Karte, wie getippt.";
+}
+
 function eigeneZeile(eintrag: Berechtigung): HTMLElement {
     const zeile = neu("div", "eigene-zeile");
     const name = neu("label", "feld", "Bezeichnung");
@@ -227,6 +251,7 @@ function fuelleMaske(): void {
     el("m-eigene").replaceChildren(...ausweis.berechtigungen.filter(eintrag => !eintrag.id).map(eigeneZeile));
     fotoElement(el("m-foto"));
     el("foto-entfernen").hidden = foto === "";
+    zeigeDienststelle();
     zeigeStrichcodeStand();
 }
 
@@ -250,6 +275,7 @@ function uebernimm(): void {
     }
     ausweis = bereinige({ ...Object.fromEntries(TEXTFELDER.map(name => [name, feld(name).value])), berechtigungen });
     feld("strichcodeInhalt").setAttribute("placeholder", ausweis.nummer || "wie Dienstausweisnummer");
+    zeigeDienststelle();
     zeigeStrichcodeStand();
     sichere();
 }
@@ -273,6 +299,11 @@ function zeigeStrichcodeStand(): void {
 }
 
 maske.addEventListener("input", uebernimm);
+// Beim Verlassen des Felds die Schreibweise aus dem Verzeichnis zeigen.
+feld("dienststelle").addEventListener("change", () => {
+    feld("dienststelle").value = ausweis.dienststelle;
+    zeigeDienststelle();
+});
 maske.addEventListener("submit", ereignis => ereignis.preventDefault());
 // Die Nummer steht auf der Karte in Großbuchstaben, und Code 39 kennt keine kleinen.
 feld("nummer").addEventListener("change", () => {
@@ -439,6 +470,7 @@ el<HTMLButtonElement>("wallet-google").addEventListener("click", ereignis => mit
 // ---- Start -----------------------------------------------------------------
 
 baueKatalog();
+baueDienststellen();
 // Logo und Emblem liegen beim Dienst unter /marke/, neben /wallet/.
 baueWalletVorschau(el("wallet-vorschau"), DIENST.replace(/\/wallet$/, ""));
 fuelleMaske();
